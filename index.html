@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tank Monitoring Dashboard</title>
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -34,7 +35,7 @@
 <section id="content">
 <nav>
     <i class='bx bx-menu'></i>
-    <span>Tank Temperature Monitoring</span>
+    <span>Monitor Status</span>
 </nav>
 
 <main>
@@ -44,30 +45,200 @@
     </div>
 </div>
 
-<!-- 21 TANK OVERVIEW -->
-<ul class="box-info" id="tank-overview">
-<!-- JS akan populate sini -->
-</ul>
+<!-- MONITOR STATUS SECTION -->
+<div class="monitor-status">
+    <div class="status-card">
+        <div class="status-header">
+            <h3>1.5</h3>
+            <span class="status-time">3:45</span>
+        </div>
+        <div class="status-content">
+            <h4>4.1 Devices</h4>
+        </div>
+    </div>
+    
+    <div class="status-card">
+        <div class="status-header">
+            <h3>2.5</h3>
+            <span class="status-time">13:5</span>
+        </div>
+        <div class="status-content">
+            <h4>Direct</h4>
+        </div>
+    </div>
+    
+    <div class="status-card">
+        <div class="status-header">
+            <h3>3.5</h3>
+            <span class="status-time">89</span>
+        </div>
+        <div class="status-content">
+            <h4>With Sense</h4>
+        </div>
+    </div>
+    
+    <div class="status-card">
+        <div class="status-header">
+            <h3>4.2</h3>
+        </div>
+        <div class="status-content">
+            <h4>Up</h4>
+        </div>
+    </div>
+    
+    <div class="status-card">
+        <div class="status-header">
+            <h3>5.0</h3>
+            <span class="status-time">7</span>
+        </div>
+        <div class="status-content">
+            <h4>Your Monitoring Device</h4>
+            <p>Wireless Express Layer</p>
+        </div>
+    </div>
+</div>
 
-<!-- TABLE -->
+<!-- STATUS BY LOCATION -->
+<div class="location-status">
+    <div class="location-header">
+        <h3>Status by Location →</h3>
+        <button class="master-btn">Let's do Master</button>
+    </div>
+</div>
+
+<!-- SUMMARY SECTION -->
+<div class="summary-section">
+    <div class="summary-header">
+        <h3>Summary</h3>
+    </div>
+    <div class="summary-content">
+        <div class="summary-card">
+            <div class="summary-value">6A+</div>
+            <div class="summary-details">
+                <h4>System</h4>
+                <p>Error Checker</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PERFORMANCE SECTION -->
+<div class="performance-section">
+    <div class="performance-header">
+        <h3>Performance</h3>
+    </div>
+    <div class="performance-content">
+        <div class="performance-card">
+            <div class="performance-value">6A+</div>
+            <div class="performance-details">
+                <h4>System</h4>
+                <p>Error Checker</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DATA TABLES -->
+<div class="table-section">
+    <div class="data-table">
+        <div class="table-header">
+            <h3>Device Status</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1236</td>
+                    <td>12M</td>
+                    <td>12M</td>
+                </tr>
+                <tr>
+                    <td>Double</td>
+                    <td>8m</td>
+                    <td>8m</td>
+                </tr>
+                <tr>
+                    <td>965</td>
+                    <td>10M</td>
+                    <td>10M</td>
+                </tr>
+                <tr>
+                    <td>Driver</td>
+                    <td>9</td>
+                    <td>9</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="data-table">
+        <div class="table-header">
+            <h3>Performance Metrics</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>23.4</td>
+                    <td>0</td>
+                    <td>Total Device</td>
+                </tr>
+                <tr>
+                    <td>25.3</td>
+                    <td>0</td>
+                    <td>An 8 Position</td>
+                </tr>
+                <tr>
+                    <td>1.818</td>
+                    <td>0</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ORIGINAL TANK OVERVIEW (keep for your data) -->
+<div class="tank-overview-section">
+    <div class="section-header">
+        <h3>21 Tank Overview</h3>
+    </div>
+    <ul class="box-info" id="tank-overview">
+        <!-- JS akan populate sini -->
+    </ul>
+</div>
+
+<!-- ORIGINAL LATEST RECORDS (keep for your data) -->
 <div class="table-data">
-<div class="order">
-<div class="head">
-    <h3>Latest Records</h3>
-</div>
-<table>
-<thead>
-<tr>
-    <th>Tank</th>
-    <th>Temperature</th>
-    <th>Date Time</th>
-</tr>
-</thead>
-<tbody id="tank-table">
-<!-- JS akan populate sini -->
-</tbody>
-</table>
-</div>
+    <div class="order">
+        <div class="head">
+            <h3>Latest Records</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tank</th>
+                    <th>Temperature</th>
+                    <th>Date Time</th>
+                </tr>
+            </thead>
+            <tbody id="tank-table">
+                <!-- JS akan populate sini -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
 </main>

@@ -2,19 +2,64 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Temperature Chart</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Tank Temperature Chart</h2>
+<!-- SIDEBAR -->
+<section id="sidebar">
+    <a href="#" class="brand">
+        <i class='bx bxs-thermometer'></i>
+        <span class="text">Tank Monitor</span>
+    </a>
+    <ul class="side-menu top">
+        <li>
+            <a href="index.html">
+                <i class='bx bxs-dashboard'></i>
+                <span class="text">Dashboard</span>
+            </a>
+        </li>
+        <li class="active">
+            <a href="chart.html">
+                <i class='bx bxs-line-chart'></i>
+                <span class="text">Charts</span>
+            </a>
+        </li>
+    </ul>
+</section>
 
-<select id="tank">
-  <!-- JS akan populate -->
-</select>
+<!-- CONTENT -->
+<section id="content">
+<nav>
+    <i class='bx bx-menu'></i>
+    <span>Temperature Charts</span>
+</nav>
 
-<canvas id="chart" height="100"></canvas>
+<main>
+<div class="head-title">
+    <div class="left">
+        <h1>Temperature Analysis</h1>
+    </div>
+</div>
+
+<div class="chart-container">
+    <div class="chart-header">
+        <h2>Tank Temperature Chart</h2>
+        <div class="chart-controls">
+            <select id="tank">
+                <!-- JS akan populate -->
+            </select>
+        </div>
+    </div>
+    <canvas id="chart" height="100"></canvas>
+</div>
+
+</main>
+</section>
 
 <script src="script.js"></script>
 </body>

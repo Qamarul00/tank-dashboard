@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co/rest/v1";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w"; // ANON key sahaja
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2wyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // ANON key sahaja
 
 async function fetchTankHistory(limit=50) {
     const res = await fetch(`${SUPABASE_URL}/tank_readings?select=*&order=created_at.desc&limit=${limit}`, {
@@ -71,13 +71,40 @@ async function populateChart() {
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: filtered.map(r => r.created_at),
+                labels: filtered.map(r => new Date(r.created_at).toLocaleTimeString()),
                 datasets: [{
                     label: 'Temperature °C',
                     data: filtered.map(r => r.temperature),
                     borderColor: '#3C91E6',
-                    tension: 0.3
+                    backgroundColor: 'rgba(60, 145, 230, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
                 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    }
+                }
             }
         });
     }
@@ -93,4 +120,3 @@ async function populateChart() {
 // Auto populate depending on page
 if (document.getElementById("tank-overview")) populateDashboard();
 if (document.getElementById("chart")) populateChart();
-
