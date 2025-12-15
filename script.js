@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co/rest/v1";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // ANON key sahaja
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w"; // ANON key sahaja
 
 async function fetchTankHistory(limit=50) {
     const res = await fetch(`${SUPABASE_URL}/tank_readings?select=*&order=created_at.desc&limit=${limit}`, {
@@ -93,3 +93,4 @@ async function populateChart() {
 // Auto populate depending on page
 if (document.getElementById("tank-overview")) populateDashboard();
 if (document.getElementById("chart")) populateChart();
+
