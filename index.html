@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tank Monitoring Dashboard</title>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<section id="sidebar">
+    <a href="#" class="brand">
+        <i class='bx bxs-thermometer'></i>
+        <span class="text">Tank Monitor</span>
+    </a>
+    <ul class="side-menu top">
+        <li class="active">
+            <a href="index.html">
+                <i class='bx bxs-dashboard'></i>
+                <span class="text">Dashboard</span>
+            </a>
+        </li>
+        <li>
+            <a href="chart.html">
+                <i class='bx bxs-line-chart'></i>
+                <span class="text">Charts</span>
+            </a>
+        </li>
+    </ul>
+</section>
+
+<!-- CONTENT -->
+<section id="content">
+<nav>
+    <i class='bx bx-menu'></i>
+    <span>Tank Temperature Monitoring</span>
+</nav>
+
+<main>
+<div class="head-title">
+    <div class="left">
+        <h1>Dashboard</h1>
+    </div>
+</div>
+
+<!-- 21 TANK OVERVIEW -->
+<ul class="box-info" id="tank-overview">
+<!-- JS akan populate sini -->
+</ul>
+
+<!-- TABLE -->
+<div class="table-data">
+<div class="order">
+<div class="head">
+    <h3>Latest Records</h3>
+</div>
+<table>
+<thead>
+<tr>
+    <th>Tank</th>
+    <th>Temperature</th>
+    <th>Date Time</th>
+</tr>
+</thead>
+<tbody id="tank-table">
+<!-- JS akan populate sini -->
+</tbody>
+</table>
+</div>
+</div>
+
+</main>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
