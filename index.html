@@ -41,190 +41,163 @@
 <main>
 <div class="head-title">
     <div class="left">
-        <h1>Dashboard</h1>
+        <h1>Tank Monitoring Dashboard</h1>
     </div>
 </div>
 
-<!-- MONITOR STATUS SECTION -->
+<!-- TANK STATUS OVERVIEW -->
 <div class="monitor-status">
     <div class="status-card">
         <div class="status-header">
-            <h3>1.5</h3>
-            <span class="status-time">3:45</span>
+            <h3 id="avg-temp">--</h3>
+            <span class="status-time" id="last-update">--</span>
         </div>
         <div class="status-content">
-            <h4>4.1 Devices</h4>
+            <h4>Average Temperature</h4>
+            <p>All 21 Tanks</p>
         </div>
     </div>
     
     <div class="status-card">
         <div class="status-header">
-            <h3>2.5</h3>
-            <span class="status-time">13:5</span>
+            <h3 id="max-temp">--</h3>
+            <span class="status-time">°C</span>
         </div>
         <div class="status-content">
-            <h4>Direct</h4>
+            <h4>Highest Temp</h4>
+            <p id="max-tank">--</p>
         </div>
     </div>
     
     <div class="status-card">
         <div class="status-header">
-            <h3>3.5</h3>
-            <span class="status-time">89</span>
+            <h3 id="min-temp">--</h3>
+            <span class="status-time">°C</span>
         </div>
         <div class="status-content">
-            <h4>With Sense</h4>
+            <h4>Lowest Temp</h4>
+            <p id="min-tank">--</p>
         </div>
     </div>
     
     <div class="status-card">
         <div class="status-header">
-            <h3>4.2</h3>
+            <h3 id="normal-tanks">--</h3>
         </div>
         <div class="status-content">
-            <h4>Up</h4>
+            <h4>Tanks in Range</h4>
+            <p>20-30°C Normal</p>
         </div>
     </div>
     
     <div class="status-card">
         <div class="status-header">
-            <h3>5.0</h3>
-            <span class="status-time">7</span>
+            <h3 id="warning-tanks">--</h3>
+            <span class="status-time warning">!</span>
         </div>
         <div class="status-content">
-            <h4>Your Monitoring Device</h4>
-            <p>Wireless Express Layer</p>
+            <h4>Warning Tanks</h4>
+            <p>Check Temperature</p>
         </div>
     </div>
 </div>
 
-<!-- STATUS BY LOCATION -->
+<!-- TANK LOCATIONS -->
 <div class="location-status">
     <div class="location-header">
-        <h3>Status by Location →</h3>
-        <button class="master-btn">Let's do Master</button>
+        <h3>Tank Locations Status →</h3>
+        <button class="master-btn" onclick="refreshData()">
+            <i class='bx bx-refresh'></i> Refresh Data
+        </button>
     </div>
 </div>
 
-<!-- SUMMARY SECTION -->
+<!-- SYSTEM SUMMARY -->
 <div class="summary-section">
     <div class="summary-header">
-        <h3>Summary</h3>
+        <h3>System Summary</h3>
     </div>
     <div class="summary-content">
         <div class="summary-card">
-            <div class="summary-value">6A+</div>
+            <div class="summary-value" id="total-readings">0</div>
             <div class="summary-details">
-                <h4>System</h4>
-                <p>Error Checker</p>
+                <h4>Total Readings</h4>
+                <p>Data Collected</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- PERFORMANCE SECTION -->
+<!-- SYSTEM PERFORMANCE -->
 <div class="performance-section">
     <div class="performance-header">
-        <h3>Performance</h3>
+        <h3>System Performance</h3>
     </div>
     <div class="performance-content">
         <div class="performance-card">
-            <div class="performance-value">6A+</div>
+            <div class="performance-value" id="data-accuracy">--</div>
             <div class="performance-details">
-                <h4>System</h4>
-                <p>Error Checker</p>
+                <h4>Data Accuracy</h4>
+                <p>Sensor Performance</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- DATA TABLES -->
+<!-- TANK STATUS TABLE -->
 <div class="table-section">
     <div class="data-table">
         <div class="table-header">
-            <h3>Device Status</h3>
+            <h3>Tank Current Status</h3>
         </div>
         <table>
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Location</th>
+                    <th>Tank ID</th>
+                    <th>Temperature</th>
+                    <th>Status</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>1236</td>
-                    <td>12M</td>
-                    <td>12M</td>
-                </tr>
-                <tr>
-                    <td>Double</td>
-                    <td>8m</td>
-                    <td>8m</td>
-                </tr>
-                <tr>
-                    <td>965</td>
-                    <td>10M</td>
-                    <td>10M</td>
-                </tr>
-                <tr>
-                    <td>Driver</td>
-                    <td>9</td>
-                    <td>9</td>
-                </tr>
+            <tbody id="tank-status-table">
+                <!-- JS akan populate -->
             </tbody>
         </table>
     </div>
     
     <div class="data-table">
         <div class="table-header">
-            <h3>Performance Metrics</h3>
+            <h3>Temperature Statistics</h3>
         </div>
         <table>
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Location</th>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Unit</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>23.4</td>
-                    <td>0</td>
-                    <td>Total Device</td>
-                </tr>
-                <tr>
-                    <td>25.3</td>
-                    <td>0</td>
-                    <td>An 8 Position</td>
-                </tr>
-                <tr>
-                    <td>1.818</td>
-                    <td>0</td>
-                    <td></td>
-                </tr>
+            <tbody id="temp-stats-table">
+                <!-- JS akan populate -->
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- ORIGINAL TANK OVERVIEW (keep for your data) -->
+<!-- 21 TANK OVERVIEW (Original dengan design baru) -->
 <div class="tank-overview-section">
     <div class="section-header">
-        <h3>21 Tank Overview</h3>
+        <h3><i class='bx bx-thermometer'></i> 21 Tank Temperature Overview</h3>
     </div>
     <ul class="box-info" id="tank-overview">
         <!-- JS akan populate sini -->
     </ul>
 </div>
 
-<!-- ORIGINAL LATEST RECORDS (keep for your data) -->
+<!-- LATEST RECORDS TABLE -->
 <div class="table-data">
     <div class="order">
         <div class="head">
-            <h3>Latest Records</h3>
+            <h3><i class='bx bx-history'></i> Latest Temperature Records</h3>
         </div>
         <table>
             <thead>
@@ -232,6 +205,7 @@
                     <th>Tank</th>
                     <th>Temperature</th>
                     <th>Date Time</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody id="tank-table">
