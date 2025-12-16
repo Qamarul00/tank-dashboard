@@ -1,88 +1,88 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tank Temperature Charts</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Temperature Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<section id="sidebar">
-    <a href="#" class="brand">
-        <i class='bx bxs-thermometer'></i>
-        <span class="text">Tank Monitor</span>
-    </a>
-    <ul class="side-menu top">
-        <li>
-            <a href="index.html">
-                <i class='bx bxs-dashboard'></i>
-                <span class="text">Dashboard</span>
-            </a>
-        </li>
-        <li class="active">
-            <a href="chart.html">
-                <i class='bx bxs-line-chart'></i>
-                <span class="text">Charts</span>
-            </a>
-        </li>
-    </ul>
-</section>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-thermometer'></i>
+            <span class="text">Tank Monitor</span>
+        </a>
+        <ul class="side-menu top">
+            <li>
+                <a href="index.html">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li class="active">
+                <a href="chart.html">
+                    <i class='bx bxs-line-chart'></i>
+                    <span class="text">Charts</span>
+                </a>
+            </li>
+        </ul>
+    </section>
 
-<!-- CONTENT -->
-<section id="content">
-<nav>
-    <i class='bx bx-menu'></i>
-    <span>Temperature Analysis Charts</span>
-</nav>
+    <!-- CONTENT -->
+    <section id="content">
+        <nav>
+            <i class='bx bx-menu'></i>
+            <span>Temperature Analysis Charts</span>
+        </nav>
 
-<main>
-<div class="head-title">
-    <div class="left">
-        <h1>Tank Temperature Analysis</h1>
-    </div>
-</div>
-
-<div class="chart-container">
-    <div class="chart-header">
-        <h2><i class='bx bx-line-chart'></i> Real-time Temperature Chart</h2>
-        <div class="chart-controls">
-            <div class="control-group">
-                <label for="tank"><i class='bx bx-thermometer'></i> Select Tank:</label>
-                <select id="tank">
-                    <!-- JS akan populate -->
-                </select>
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Tank Temperature Analysis</h1>
+                </div>
             </div>
-            <div class="control-group">
-                <label for="time-range"><i class='bx bx-time'></i> Time Range:</label>
-                <select id="time-range">
-                    <option value="10">Last 10 readings</option>
-                    <option value="50" selected>Last 50 readings</option>
-                    <option value="100">Last 100 readings</option>
-                    <option value="200">Last 200 readings</option>
-                </select>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2><i class='bx bx-line-chart'></i> Real-time Temperature Chart</h2>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label for="tank"><i class='bx bx-thermometer'></i> Select Tank:</label>
+                            <select id="tank">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="time-range"><i class='bx bx-time'></i> Time Range:</label>
+                            <select id="time-range">
+                                <option value="10">Last 10 readings</option>
+                                <option value="50" selected>Last 50 readings</option>
+                                <option value="100">Last 100 readings</option>
+                                <option value="200">Last 200 readings</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper">
+                    <canvas id="chart" height="400"></canvas>
+                </div>
+                
+                <div class="chart-info">
+                    <div class="info-card">
+                        <i class='bx bx-info-circle'></i>
+                        <p>This chart shows real-time temperature fluctuations for each tank. Select a tank from the dropdown to view its temperature history. Temperatures above 50°C are highlighted in red.</p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    
-    <div class="chart-wrapper">
-        <canvas id="chart" height="400"></canvas>
-    </div>
-    
-    <div class="chart-info">
-        <div class="info-card">
-            <i class='bx bx-info-circle'></i>
-            <p>This chart shows real-time temperature fluctuations for each tank. Select a tank from the dropdown to view its temperature history.</p>
-        </div>
-    </div>
-</div>
 
-</main>
-</section>
+        </main>
+    </section>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

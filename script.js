@@ -3,6 +3,33 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 // Global variables
 let allTankData = [];
+let map = null;
+let tankMarkers = [];
+
+// OpenStreetMap tank locations (sample coordinates - replace with real ones)
+const tankLocations = {
+    1: { lat: 3.1390, lng: 101.6869, name: "Main Processing Tank" },
+    2: { lat: 3.1400, lng: 101.6875, name: "Storage Tank A" },
+    3: { lat: 3.1410, lng: 101.6860, name: "Storage Tank B" },
+    4: { lat: 3.1395, lng: 101.6855, name: "Distribution Tank" },
+    5: { lat: 3.1385, lng: 101.6880, name: "Reserve Tank 1" },
+    6: { lat: 3.1392, lng: 101.6890, name: "Reserve Tank 2" },
+    7: { lat: 3.1405, lng: 101.6850, name: "Backup Tank A" },
+    8: { lat: 3.1415, lng: 101.6870, name: "Backup Tank B" },
+    9: { lat: 3.1375, lng: 101.6860, name: "Auxiliary Tank 1" },
+    10: { lat: 3.1380, lng: 101.6845, name: "Auxiliary Tank 2" },
+    11: { lat: 3.1420, lng: 101.6855, name: "Secondary Storage A" },
+    12: { lat: 3.1425, lng: 101.6865, name: "Secondary Storage B" },
+    13: { lat: 3.1370, lng: 101.6875, name: "Emergency Tank 1" },
+    14: { lat: 3.1365, lng: 101.6885, name: "Emergency Tank 2" },
+    15: { lat: 3.1430, lng: 101.6875, name: "Overflow Tank A" },
+    16: { lat: 3.1435, lng: 101.6885, name: "Overflow Tank B" },
+    17: { lat: 3.1360, lng: 101.6855, name: "Testing Tank 1" },
+    18: { lat: 3.1355, lng: 101.6845, name: "Testing Tank 2" },
+    19: { lat: 3.1440, lng: 101.6860, name: "Experimental Tank" },
+    20: { lat: 3.1445, lng: 101.6870, name: "Research Tank" },
+    21: { lat: 3.1350, lng: 101.6865, name: "Quality Control Tank" }
+};
 
 async function fetchTankHistory(limit = 100) {
     try {
@@ -23,7 +50,6 @@ async function fetchTankHistory(limit = 100) {
         return data;
     } catch (error) {
         console.error("Error fetching tank history:", error);
-        // Return mock data for testing
         return generateMockData();
     }
 }
@@ -48,8 +74,7 @@ function generateMockData() {
     
     for (let i = 1; i <= 50; i++) {
         const tankId = Math.floor(Math.random() * 21) + 1;
-        // Generate temperatures between 40-60°C for testing
-        const temp = 40 + Math.random() * 20; // Random temp between 40-60
+        const temp = 40 + Math.random() * 20;
         mockData.push({
             tank_id: tankId,
             temperature: parseFloat(temp.toFixed(2)),
@@ -60,29 +85,27 @@ function generateMockData() {
     return mockData;
 }
 
-// Updated temperature thresholds: Below 50°C = Normal, Above 50°C = Too Hot
 function getStatusClass(temperature) {
     if (temperature >= 50) {
-        return temperature >= 60 ? 'critical-hot' : 'too-hot';
+        return 'too-hot';
     }
     return '';
 }
 
 function getStatusText(temperature) {
     if (temperature >= 50) {
-        return temperature >= 60 ? 'Critical Hot' : 'Too Hot';
+        return 'Too Hot';
     }
     return 'Normal';
 }
 
 function getStatusIcon(temperature) {
     if (temperature >= 50) {
-        return temperature >= 60 ? 'bx bxs-fire' : 'bx bx-hot';
+        return 'bx bxs-fire';
     }
     return 'bx bx-check-circle';
 }
 
-// Calculate statistics
 function calculateStatistics(data) {
     const stats = {
         totalReadings: data.length,
@@ -99,7 +122,6 @@ function calculateStatistics(data) {
     
     const tankLatest = {};
     
-    // Get latest reading for each tank
     data.forEach(r => {
         if (!tankLatest[r.tank_id] || new Date(r.created_at) > new Date(tankLatest[r.tank_id].created_at)) {
             tankLatest[r.tank_id] = r;
@@ -108,7 +130,6 @@ function calculateStatistics(data) {
     
     const latestTemps = Object.values(tankLatest);
     
-    // Calculate stats
     if (latestTemps.length > 0) {
         let sum = 0;
         latestTemps.forEach(r => {
@@ -138,9 +159,7 @@ function calculateStatistics(data) {
     return stats;
 }
 
-// Update metrics on dashboard
 function updateMetrics(stats) {
-    // Update top metrics cards
     document.getElementById('avg-temp').textContent = stats.avgTemp ? stats.avgTemp.toFixed(1) + '°C' : '--';
     document.getElementById('max-temp').textContent = stats.maxTemp !== -Infinity ? stats.maxTemp.toFixed(1) : '--';
     document.getElementById('min-temp').textContent = stats.minTemp !== Infinity ? stats.minTemp.toFixed(1) : '--';
@@ -151,12 +170,10 @@ function updateMetrics(stats) {
     document.getElementById('last-update').textContent = stats.latestUpdate ? 
         stats.latestUpdate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--';
     
-    // Update summary cards
     document.getElementById('total-readings').textContent = stats.totalReadings;
     document.getElementById('active-tanks').textContent = stats.activeTanks;
 }
 
-// Populate tank status table
 function populateTankStatusTable(latestData) {
     const tableBody = document.getElementById('tank-status-table');
     if (!tableBody) return;
@@ -183,7 +200,6 @@ function populateTankStatusTable(latestData) {
     }
 }
 
-// Populate temperature statistics table
 function populateTempStatsTable(stats) {
     const tableBody = document.getElementById('temp-stats-table');
     if (!tableBody) return;
@@ -216,20 +232,139 @@ function populateTempStatsTable(stats) {
     </tr>`;
 }
 
-// Populate dashboard
+// OpenStreetMap Functions
+function initMap() {
+    if (!document.getElementById('map')) return;
+    
+    // Initialize map centered on average location
+    const centerLat = Object.values(tankLocations).reduce((sum, loc) => sum + loc.lat, 0) / 21;
+    const centerLng = Object.values(tankLocations).reduce((sum, loc) => sum + loc.lng, 0) / 21;
+    
+    map = L.map('map').setView([centerLat, centerLng], 17);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+    }).addTo(map);
+    
+    // Add tank markers
+    updateMapMarkers();
+}
+
+function updateMapMarkers() {
+    if (!map) return;
+    
+    // Clear existing markers
+    tankMarkers.forEach(marker => map.removeLayer(marker));
+    tankMarkers = [];
+    
+    // Get latest tank temperatures
+    const latestData = window.latestTankData || {};
+    
+    // Create markers for each tank
+    for (let tankId = 1; tankId <= 21; tankId++) {
+        const location = tankLocations[tankId];
+        if (!location) continue;
+        
+        const tempData = latestData[tankId];
+        const temp = tempData ? tempData.temperature : null;
+        const isHot = temp && temp >= 50;
+        const markerColor = isHot ? '#e53e3e' : '#48bb78';
+        
+        // Create custom marker
+        const markerIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `
+                <div style="
+                    background-color: ${markerColor};
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 12px;
+                    cursor: pointer;
+                ">
+                    ${tankId}
+                </div>
+            `,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+        
+        const marker = L.marker([location.lat, location.lng], {
+            icon: markerIcon,
+            title: `Tank ${tankId}: ${temp ? temp.toFixed(1) + '°C' : 'No data'}`
+        }).addTo(map);
+        
+        // Create popup content
+        const popupContent = `
+            <div style="min-width: 200px; padding: 10px;">
+                <h3 style="margin: 0 0 10px 0; color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">
+                    Tank ${tankId}
+                </h3>
+                <p style="margin: 8px 0; color: #4a5568;">
+                    <strong>Location:</strong> ${location.name}
+                </p>
+                <p style="margin: 8px 0; color: #4a5568;">
+                    <strong>Temperature:</strong> 
+                    <span style="color: ${isHot ? '#e53e3e' : '#48bb78'}; font-weight: bold;">
+                        ${temp ? temp.toFixed(1) + '°C' : 'No data'}
+                    </span>
+                </p>
+                <p style="margin: 8px 0; color: #4a5568;">
+                    <strong>Status:</strong> 
+                    <span style="color: ${isHot ? '#e53e3e' : '#48bb78'}; font-weight: bold;">
+                        ${temp ? getStatusText(temp) : 'Unknown'}
+                    </span>
+                </p>
+                ${tempData ? `
+                <p style="margin: 8px 0; color: #718096; font-size: 0.9rem;">
+                    <i>Last updated: ${new Date(tempData.created_at).toLocaleString()}</i>
+                </p>
+                ` : ''}
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        tankMarkers.push(marker);
+    }
+}
+
+function refreshMap() {
+    const btn = document.querySelector('.map-toggle');
+    if (btn) {
+        btn.innerHTML = '<i class="bx bx-loader bx-spin"></i> Refreshing...';
+        btn.disabled = true;
+        
+        if (map) {
+            updateMapMarkers();
+            map.setView(map.getCenter(), map.getZoom());
+        }
+        
+        setTimeout(() => {
+            btn.innerHTML = '<i class="bx bx-refresh"></i> Refresh Map';
+            btn.disabled = false;
+            showNotification('Map refreshed successfully!', 'success');
+        }, 500);
+    }
+}
+
 async function populateDashboard() {
     const data = await fetchTankHistory(200);
     
-    // Calculate statistics
     const stats = calculateStatistics(data);
-    
-    // Update all metrics
     updateMetrics(stats);
     
-    // Get latest values for each tank
     const latestValues = await fetchLatestTankValues();
+    window.latestTankData = latestValues;
     
-    // Populate 21 tank overview
     const tankOverview = document.getElementById("tank-overview");
     if (tankOverview) {
         tankOverview.innerHTML = "";
@@ -250,11 +385,10 @@ async function populateDashboard() {
         }
     }
     
-    // Populate latest records table
     const tankTable = document.getElementById("tank-table");
     if (tankTable) {
         tankTable.innerHTML = "";
-        const latestRecords = data.slice(0, 10); // Get 10 latest records
+        const latestRecords = data.slice(0, 10);
         latestRecords.forEach(r => {
             const statusClass = getStatusClass(r.temperature);
             const statusText = getStatusText(r.temperature);
@@ -274,14 +408,14 @@ async function populateDashboard() {
         });
     }
     
-    // Populate tank status table
     populateTankStatusTable(latestValues);
-    
-    // Populate temperature statistics table
     populateTempStatsTable(stats);
+    
+    if (map) {
+        updateMapMarkers();
+    }
 }
 
-// Refresh data function
 async function refreshData() {
     const refreshBtn = document.querySelector('.master-btn');
     if (refreshBtn) {
@@ -294,16 +428,12 @@ async function refreshData() {
         setTimeout(() => {
             refreshBtn.innerHTML = originalText;
             refreshBtn.disabled = false;
-            
-            // Show success notification
             showNotification('Data refreshed successfully!', 'success');
         }, 1000);
     }
 }
 
-// Notification function
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.innerHTML = `
@@ -311,10 +441,8 @@ function showNotification(message, type = 'info') {
         <span>${message}</span>
     `;
     
-    // Add to body
     document.body.appendChild(notification);
     
-    // Remove after 3 seconds
     setTimeout(() => {
         notification.classList.add('fade-out');
         setTimeout(() => {
@@ -325,7 +453,6 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Add CSS for notifications and status badges
 function addCustomStyles() {
     const style = document.createElement('style');
     style.textContent = `
@@ -343,19 +470,14 @@ function addCustomStyles() {
             font-size: 16px;
         }
         
-        .status-badge:not(.too-hot):not(.critical-hot) {
+        .status-badge:not(.too-hot) {
             background: #c6f6d5;
             color: #22543d;
         }
         
         .status-badge.too-hot {
-            background: #fed7d7;
-            color: #c53030;
-        }
-        
-        .status-badge.critical-hot {
-            background: #9b2c2c;
-            color: white;
+            background: #feb2b2;
+            color: #9b2c2c;
             font-weight: 700;
         }
         
@@ -410,29 +532,61 @@ function addCustomStyles() {
             100% { transform: rotate(360deg); }
         }
         
-        /* Temperature color coding */
         td.too-hot, li.too-hot h3, span.too-hot {
-            color: #e53e3e;
-            font-weight: 600;
-        }
-        
-        td.critical-hot, li.critical-hot h3, span.critical-hot {
-            color: #9b2c2c;
-            font-weight: 700;
+            color: #e53e3e !important;
+            font-weight: 700 !important;
         }
         
         td.too-hot strong, li.too-hot h3 {
-            color: #e53e3e;
+            color: #e53e3e !important;
         }
         
-        td.critical-hot strong, li.critical-hot h3 {
-            color: white;
+        /* Mobile sidebar */
+        #sidebar.active {
+            transform: translateX(0) !important;
+            width: 250px !important;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        #sidebar.active .brand .text,
+        #sidebar.active .side-menu li a .text {
+            display: flex !important;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            #content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #content nav i {
+                display: block !important;
+            }
         }
     `;
     document.head.appendChild(style);
 }
 
-// Populate chart
 async function populateChart() {
     const data = await fetchTankHistory(200);
     const selectTank = document.getElementById("tank");
@@ -443,7 +597,6 @@ async function populateChart() {
 
     let chart = null;
 
-    // Populate tank dropdown
     for (let i = 1; i <= 21; i++) {
         selectTank.innerHTML += `<option value="${i}">Tank ${i}</option>`;
     }
@@ -470,7 +623,7 @@ async function populateChart() {
                     fill: true,
                     pointBackgroundColor: filtered.map(r => {
                         if (r.temperature >= 50) {
-                            return r.temperature >= 60 ? '#9b2c2c' : '#e53e3e';
+                            return '#e53e3e';
                         }
                         return '#48bb78';
                     }),
@@ -499,7 +652,7 @@ async function populateChart() {
                             label: function(context) {
                                 let status = 'Normal';
                                 if (context.parsed.y >= 50) {
-                                    status = context.parsed.y >= 60 ? 'Critical Hot' : 'Too Hot';
+                                    status = 'Too Hot';
                                 }
                                 return `Temperature: ${context.parsed.y}°C (${status})`;
                             }
@@ -548,10 +701,8 @@ async function populateChart() {
         });
     }
 
-    // Initial draw
     draw(1, parseInt(timeRange.value));
 
-    // Event listeners
     selectTank.onchange = function(e) {
         draw(parseInt(e.target.value), parseInt(timeRange.value));
     };
@@ -561,26 +712,59 @@ async function populateChart() {
     };
 }
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     addCustomStyles();
     
-    // Check which page we're on
     if (document.getElementById("tank-overview")) {
         populateDashboard();
+        // Initialize map after a short delay
+        setTimeout(initMap, 500);
     }
     
     if (document.getElementById("chart")) {
         populateChart();
     }
     
-    // Add sidebar toggle functionality
     const menuToggle = document.querySelector('#content nav .bx-menu');
     const sidebar = document.getElementById('sidebar');
     
     if (menuToggle && sidebar) {
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        document.body.appendChild(overlay);
+        
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+        });
+        
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+        
+        const sidebarLinks = document.querySelectorAll('#sidebar a');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
         });
     }
+    
+    window.addEventListener('resize', function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.querySelector('.overlay');
+        
+        if (window.innerWidth > 768 && sidebar && overlay) {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
 });

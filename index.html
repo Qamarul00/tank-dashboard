@@ -1,214 +1,252 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tank Monitoring Dashboard</title>
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tank Monitoring Dashboard</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<section id="sidebar">
-    <a href="#" class="brand">
-        <i class='bx bxs-thermometer'></i>
-        <span class="text">Tank Monitor</span>
-    </a>
-    <ul class="side-menu top">
-        <li class="active">
-            <a href="index.html">
-                <i class='bx bxs-dashboard'></i>
-                <span class="text">Dashboard</span>
-            </a>
-        </li>
-        <li>
-            <a href="chart.html">
-                <i class='bx bxs-line-chart'></i>
-                <span class="text">Charts</span>
-            </a>
-        </li>
-    </ul>
-</section>
+    <!-- SIDEBAR -->
+    <section id="sidebar">
+        <a href="#" class="brand">
+            <i class='bx bxs-thermometer'></i>
+            <span class="text">Tank Monitor</span>
+        </a>
+        <ul class="side-menu top">
+            <li class="active">
+                <a href="index.html">
+                    <i class='bx bxs-dashboard'></i>
+                    <span class="text">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="chart.html">
+                    <i class='bx bxs-line-chart'></i>
+                    <span class="text">Charts</span>
+                </a>
+            </li>
+        </ul>
+    </section>
 
-<!-- CONTENT -->
-<section id="content">
-<nav>
-    <i class='bx bx-menu'></i>
-    <span>Monitor Status</span>
-</nav>
+    <!-- CONTENT -->
+    <section id="content">
+        <nav>
+            <i class='bx bx-menu'></i>
+            <span>Monitor Status</span>
+        </nav>
 
-<main>
-<div class="head-title">
-    <div class="left">
-        <h1>Tank Monitoring Dashboard</h1>
-    </div>
-</div>
-
-<!-- TANK STATUS OVERVIEW -->
-<div class="monitor-status">
-    <div class="status-card">
-        <div class="status-header">
-            <h3 id="avg-temp">--</h3>
-            <span class="status-time" id="last-update">--</span>
-        </div>
-        <div class="status-content">
-            <h4>Average Temperature</h4>
-            <p>All 21 Tanks</p>
-        </div>
-    </div>
-    
-    <div class="status-card">
-        <div class="status-header">
-            <h3 id="max-temp">--</h3>
-            <span class="status-time">°C</span>
-        </div>
-        <div class="status-content">
-            <h4>Highest Temp</h4>
-            <p id="max-tank">--</p>
-        </div>
-    </div>
-    
-    <div class="status-card">
-        <div class="status-header">
-            <h3 id="min-temp">--</h3>
-            <span class="status-time">°C</span>
-        </div>
-        <div class="status-content">
-            <h4>Lowest Temp</h4>
-            <p id="min-tank">--</p>
-        </div>
-    </div>
-    
-    <div class="status-card">
-        <div class="status-header">
-            <h3 id="normal-tanks">--</h3>
-        </div>
-        <div class="status-content">
-            <h4>Tanks in Range</h4>
-            <p>Below 50°C Normal</p>
-        </div>
-    </div>
-    
-    <div class="status-card">
-        <div class="status-header">
-            <h3 id="warning-tanks">--</h3>
-            <span class="status-time warning">!</span>
-        </div>
-        <div class="status-content">
-            <h4>Too Hot Tanks</h4>
-            <p>Above 50°C</p>
-        </div>
-    </div>
-</div>
-
-<!-- TANK LOCATIONS -->
-<div class="location-status">
-    <div class="location-header">
-        <h3>Tank Locations Status →</h3>
-        <button class="master-btn" onclick="refreshData()">
-            <i class='bx bx-refresh'></i> Refresh Data
-        </button>
-    </div>
-</div>
-
-<!-- SYSTEM SUMMARY -->
-<div class="summary-section">
-    <div class="summary-header">
-        <h3>System Summary</h3>
-    </div>
-    <div class="summary-content">
-        <div class="summary-card">
-            <div class="summary-value" id="total-readings">0</div>
-            <div class="summary-details">
-                <h4>Total Readings</h4>
-                <p>Data Collected</p>
+        <main>
+            <div class="head-title">
+                <div class="left">
+                    <h1>Tank Monitoring Dashboard</h1>
+                </div>
             </div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-value" id="active-tanks">21</div>
-            <div class="summary-details">
-                <h4>Active Tanks</h4>
-                <p>Currently Monitoring</p>
+
+            <!-- TANK STATUS OVERVIEW -->
+            <div class="monitor-status">
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3 id="avg-temp">--</h3>
+                        <span class="status-time" id="last-update">--</span>
+                    </div>
+                    <div class="status-content">
+                        <h4>Average Temperature</h4>
+                        <p>All 21 Tanks</p>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3 id="max-temp">--</h3>
+                        <span class="status-time">°C</span>
+                    </div>
+                    <div class="status-content">
+                        <h4>Highest Temp</h4>
+                        <p id="max-tank">--</p>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3 id="min-temp">--</h3>
+                        <span class="status-time">°C</span>
+                    </div>
+                    <div class="status-content">
+                        <h4>Lowest Temp</h4>
+                        <p id="min-tank">--</p>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3 id="normal-tanks">--</h3>
+                    </div>
+                    <div class="status-content">
+                        <h4>Tanks in Range</h4>
+                        <p>Below 50°C Normal</p>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3 id="warning-tanks">--</h3>
+                        <span class="status-time warning">!</span>
+                    </div>
+                    <div class="status-content">
+                        <h4>Too Hot Tanks</h4>
+                        <p>Above 50°C</p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- TANK STATUS TABLE -->
-<div class="table-section">
-    <div class="data-table">
-        <div class="table-header">
-            <h3>Tank Current Status</h3>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Tank ID</th>
-                    <th>Temperature</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="tank-status-table">
-                <!-- JS akan populate -->
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="data-table">
-        <div class="table-header">
-            <h3>Temperature Statistics</h3>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
-                    <th>Unit</th>
-                </tr>
-            </thead>
-            <tbody id="temp-stats-table">
-                <!-- JS akan populate -->
-            </tbody>
-        </table>
-    </div>
-</div>
+            <!-- TANK LOCATIONS -->
+            <div class="location-status">
+                <div class="location-header">
+                    <h3>Tank Locations Status →</h3>
+                    <button class="master-btn" onclick="refreshData()">
+                        <i class='bx bx-refresh'></i> Refresh Data
+                    </button>
+                </div>
+            </div>
 
-<!-- 21 TANK OVERVIEW (Original dengan design baru) -->
-<div class="tank-overview-section">
-    <div class="section-header">
-        <h3><i class='bx bx-thermometer'></i> 21 Tank Temperature Overview</h3>
-    </div>
-    <ul class="box-info" id="tank-overview">
-        <!-- JS akan populate sini -->
-    </ul>
-</div>
+            <!-- SYSTEM SUMMARY -->
+            <div class="summary-section">
+                <div class="summary-header">
+                    <h3>System Summary</h3>
+                </div>
+                <div class="summary-content">
+                    <div class="summary-card">
+                        <div class="summary-value" id="total-readings">0</div>
+                        <div class="summary-details">
+                            <h4>Total Readings</h4>
+                            <p>Data Collected</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-value" id="active-tanks">21</div>
+                        <div class="summary-details">
+                            <h4>Active Tanks</h4>
+                            <p>Currently Monitoring</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<!-- LATEST RECORDS TABLE -->
-<div class="table-data">
-    <div class="order">
-        <div class="head">
-            <h3><i class='bx bx-history'></i> Latest Temperature Records</h3>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Tank</th>
-                    <th>Temperature</th>
-                    <th>Date Time</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="tank-table">
-                <!-- JS akan populate sini -->
-            </tbody>
-        </table>
-    </div>
-</div>
+            <!-- TANK LOCATIONS MAP -->
+            <div class="map-section">
+                <div class="section-header">
+                    <h3><i class='bx bx-map'></i> Tank Locations Map</h3>
+                    <button class="map-toggle" onclick="refreshMap()">
+                        <i class='bx bx-refresh'></i> Refresh Map
+                    </button>
+                </div>
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="map-legend">
+                        <h4><i class='bx bx-legend'></i> Legend</h4>
+                        <div class="legend-item">
+                            <span class="legend-color normal"></span>
+                            <span>Normal (< 50°C)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color hot"></span>
+                            <span>Too Hot (≥ 50°C)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span><i class='bx bx-info-circle info-icon'></i></span>
+                            <span>Click markers for details</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-</main>
-</section>
+            <!-- TANK STATUS TABLE -->
+            <div class="table-section">
+                <div class="data-table">
+                    <div class="table-header">
+                        <h3>Tank Current Status</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tank ID</th>
+                                <th>Temperature</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tank-status-table">
+                            <tr><td colspan="3" style="text-align: center; color: #718096;">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="data-table">
+                    <div class="table-header">
+                        <h3>Temperature Statistics</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                                <th>Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody id="temp-stats-table">
+                            <tr><td colspan="3" style="text-align: center; color: #718096;">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-<script src="script.js"></script>
+            <!-- 21 TANK OVERVIEW -->
+            <div class="tank-overview-section">
+                <div class="section-header">
+                    <h3><i class='bx bx-thermometer'></i> 21 Tank Temperature Overview</h3>
+                </div>
+                <ul class="box-info" id="tank-overview">
+                    <li style="grid-column: 1 / -1; text-align: center; color: #718096;">
+                        <i class='bx bx-loader bx-spin'></i>
+                        <span class="text">
+                            <h3>Loading...</h3>
+                            <p>Fetching tank data</p>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- LATEST RECORDS TABLE -->
+            <div class="table-data">
+                <div class="order">
+                    <div class="head">
+                        <h3><i class='bx bx-history'></i> Latest Temperature Records</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tank</th>
+                                <th>Temperature</th>
+                                <th>Date Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tank-table">
+                            <tr><td colspan="4" style="text-align: center; color: #718096;">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </section>
+
+    <!-- Leaflet JS for OpenStreetMap -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
