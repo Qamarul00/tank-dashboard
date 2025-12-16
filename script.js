@@ -48,7 +48,8 @@ function generateMockData() {
     
     for (let i = 1; i <= 50; i++) {
         const tankId = Math.floor(Math.random() * 21) + 1;
-        const temp = 20 + Math.random() * 15; // Random temp between 20-35
+        // Generate temperatures between 40-60°C for testing
+        const temp = 40 + Math.random() * 20; // Random temp between 40-60
         mockData.push({
             tank_id: tankId,
             temperature: parseFloat(temp.toFixed(2)),
@@ -59,22 +60,25 @@ function generateMockData() {
     return mockData;
 }
 
+// Updated temperature thresholds: Below 50°C = Normal, Above 50°C = Too Hot
 function getStatusClass(temperature) {
-    if (temperature < 20 || temperature > 30) {
-        return temperature < 15 || temperature > 35 ? 'critical' : 'warning';
+    if (temperature >= 50) {
+        return temperature >= 60 ? 'critical-hot' : 'too-hot';
     }
     return '';
 }
 
 function getStatusText(temperature) {
-    if (temperature < 20) return 'Too Low';
-    if (temperature > 30) return 'Too High';
+    if (temperature >= 50) {
+        return temperature >= 60 ? 'Critical Hot' : 'Too Hot';
+    }
     return 'Normal';
 }
 
 function getStatusIcon(temperature) {
-    if (temperature < 20) return 'bx bx-down-arrow-alt';
-    if (temperature > 30) return 'bx bx-up-arrow-alt';
+    if (temperature >= 50) {
+        return temperature >= 60 ? 'bx bxs-fire' : 'bx bx-hot';
+    }
     return 'bx bx-check-circle';
 }
 
@@ -89,7 +93,8 @@ function calculateStatistics(data) {
         minTank: null,
         normalTanks: 0,
         warningTanks: 0,
-        latestUpdate: null
+        latestUpdate: null,
+        activeTanks: 21
     };
     
     const tankLatest = {};
@@ -119,7 +124,7 @@ function calculateStatistics(data) {
                 stats.minTank = r.tank_id;
             }
             
-            if (r.temperature >= 20 && r.temperature <= 30) {
+            if (r.temperature < 50) {
                 stats.normalTanks++;
             } else {
                 stats.warningTanks++;
@@ -128,9 +133,6 @@ function calculateStatistics(data) {
         
         stats.avgTemp = sum / latestTemps.length;
         stats.latestUpdate = new Date(Math.max(...latestTemps.map(r => new Date(r.created_at))));
-        
-        // Calculate data accuracy (mock calculation)
-        stats.dataAccuracy = Math.min(100, Math.floor(95 + Math.random() * 5));
     }
     
     return stats;
@@ -151,7 +153,7 @@ function updateMetrics(stats) {
     
     // Update summary cards
     document.getElementById('total-readings').textContent = stats.totalReadings;
-    document.getElementById('data-accuracy').textContent = stats.dataAccuracy ? stats.dataAccuracy + '%' : '--';
+    document.getElementById('active-tanks').textContent = stats.activeTanks;
 }
 
 // Populate tank status table
@@ -199,7 +201,7 @@ function populateTempStatsTable(stats) {
     </tr>
     <tr>
         <td>Normal Range</td>
-        <td><strong>20.0 - 30.0</strong></td>
+        <td><strong>Below 50.0°C</strong></td>
         <td>°C</td>
     </tr>
     <tr>
@@ -341,19 +343,19 @@ function addCustomStyles() {
             font-size: 16px;
         }
         
-        .status-badge:not(.warning):not(.critical) {
+        .status-badge:not(.too-hot):not(.critical-hot) {
             background: #c6f6d5;
             color: #22543d;
         }
         
-        .status-badge.warning {
+        .status-badge.too-hot {
             background: #fed7d7;
             color: #c53030;
         }
         
-        .status-badge.critical {
-            background: #fed7d7;
-            color: #9b2c2c;
+        .status-badge.critical-hot {
+            background: #9b2c2c;
+            color: white;
             font-weight: 700;
         }
         
@@ -409,12 +411,22 @@ function addCustomStyles() {
         }
         
         /* Temperature color coding */
-        td.warning, li.warning h3 {
-            color: #ed8936;
+        td.too-hot, li.too-hot h3, span.too-hot {
+            color: #e53e3e;
+            font-weight: 600;
         }
         
-        td.critical, li.critical h3 {
-            color: #f56565;
+        td.critical-hot, li.critical-hot h3, span.critical-hot {
+            color: #9b2c2c;
+            font-weight: 700;
+        }
+        
+        td.too-hot strong, li.too-hot h3 {
+            color: #e53e3e;
+        }
+        
+        td.critical-hot strong, li.critical-hot h3 {
+            color: white;
         }
     `;
     document.head.appendChild(style);
@@ -457,8 +469,8 @@ async function populateChart() {
                     tension: 0.4,
                     fill: true,
                     pointBackgroundColor: filtered.map(r => {
-                        if (r.temperature < 20 || r.temperature > 30) {
-                            return r.temperature < 15 || r.temperature > 35 ? '#f56565' : '#ed8936';
+                        if (r.temperature >= 50) {
+                            return r.temperature >= 60 ? '#9b2c2c' : '#e53e3e';
                         }
                         return '#48bb78';
                     }),
@@ -485,7 +497,11 @@ async function populateChart() {
                         intersect: false,
                         callbacks: {
                             label: function(context) {
-                                return `Temperature: ${context.parsed.y}°C`;
+                                let status = 'Normal';
+                                if (context.parsed.y >= 50) {
+                                    status = context.parsed.y >= 60 ? 'Critical Hot' : 'Too Hot';
+                                }
+                                return `Temperature: ${context.parsed.y}°C (${status})`;
                             }
                         }
                     }
