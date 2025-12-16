@@ -275,9 +275,8 @@ main {
     box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
 }
 
-/* SUMMARY & PERFORMANCE SECTIONS */
-.summary-section,
-.performance-section {
+/* SUMMARY SECTION */
+.summary-section {
     background: white;
     border-radius: 16px;
     padding: 30px;
@@ -286,15 +285,13 @@ main {
     border: 1px solid #e2e8f0;
 }
 
-.summary-header,
-.performance-header {
+.summary-header {
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 3px solid #f7fafc;
 }
 
-.summary-header h3,
-.performance-header h3 {
+.summary-header h3 {
     color: #2d3748;
     font-size: 1.5rem;
     font-weight: 700;
@@ -303,31 +300,31 @@ main {
     gap: 10px;
 }
 
-.summary-content,
-.performance-content {
-    display: flex;
+.summary-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 25px;
 }
 
-.summary-card,
-.performance-card {
+.summary-card {
     display: flex;
     align-items: center;
     background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
     padding: 30px;
     border-radius: 14px;
     border-left: 6px solid #4299e1;
-    flex: 1;
     transition: transform 0.3s;
 }
 
-.summary-card:hover,
-.performance-card:hover {
+.summary-card:hover {
     transform: translateX(5px);
 }
 
-.summary-value,
-.performance-value {
+.summary-card:nth-child(2) {
+    border-left-color: #48bb78;
+}
+
+.summary-value {
     font-size: 3.5rem;
     font-weight: 900;
     color: #2d3748;
@@ -336,16 +333,14 @@ main {
     text-align: center;
 }
 
-.summary-details h4,
-.performance-details h4 {
+.summary-details h4 {
     color: #2d3748;
     margin-bottom: 10px;
     font-size: 1.3rem;
     font-weight: 700;
 }
 
-.summary-details p,
-.performance-details p {
+.summary-details p {
     color: #718096;
     font-size: 1rem;
 }
@@ -461,14 +456,23 @@ main {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
-.box-info li.warning {
-    border-left: 5px solid #ed8936;
-    background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
-}
-
-.box-info li.critical {
+.box-info li.too-hot {
     border-left: 5px solid #f56565;
     background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+}
+
+.box-info li.critical-hot {
+    border-left: 5px solid #9b2c2c;
+    background: linear-gradient(135deg, #742a2a 0%, #9b2c2c 100%);
+}
+
+.box-info li.critical-hot .text h3,
+.box-info li.critical-hot .text p {
+    color: white;
+}
+
+.box-info li.critical-hot i {
+    color: white;
 }
 
 .box-info li i {
@@ -478,8 +482,8 @@ main {
     display: block;
 }
 
-.box-info li.warning i { color: #ed8936; }
-.box-info li.critical i { color: #f56565; }
+.box-info li.too-hot i { color: #f56565; }
+.box-info li.critical-hot i { color: white; }
 
 .box-info li .text h3 {
     color: #2d3748;
@@ -732,8 +736,7 @@ main {
         font-size: 2rem;
     }
     
-    .summary-value,
-    .performance-value {
+    .summary-value {
         font-size: 2.5rem;
     }
     
