@@ -1,11 +1,5 @@
 const supabase = window.supabaseClient;
 
-// terus guna
-const { data, error } = await supabase
-  .from('tank_readings')
-  .select('*');
-
-
 // Global variables
 let realtimeEnabled = true;
 let map = null;
