@@ -1,3 +1,4 @@
+// ==================== CONFIGURATION ====================
 const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w";
 
@@ -21,30 +22,34 @@ let isLoadingMore = false;
 let totalDatabaseCount = 0;
 let displayedRecordsLimit = 15;
 
-// Tank locations at FIMA Bulking Services, Tanjung Langsat
+// Tank locations at FIMA Bulking Services, Tanjung Langsat - SIMPLIFIED NAMES
 const tankLocations = {
-    1: { lat: 1.4568493, lng: 103.9943378, name: "Storage Tank A1" },
-    2: { lat: 1.4569493, lng: 103.9944378, name: "Storage Tank A2" },
-    3: { lat: 1.4570493, lng: 103.9943378, name: "Storage Tank B1" },
-    4: { lat: 1.4571493, lng: 103.9944378, name: "Storage Tank B2" },
-    5: { lat: 1.4572493, lng: 103.9943378, name: "Storage Tank C1" },
-    6: { lat: 1.4573493, lng: 103.9944378, name: "Storage Tank C2" },
-    7: { lat: 1.4568493, lng: 103.9939378, name: "Processing Tank D1" },
-    8: { lat: 1.4569493, lng: 103.9940378, name: "Processing Tank D2" },
-    9: { lat: 1.4570493, lng: 103.9939378, name: "Processing Tank E1" },
-    10: { lat: 1.4571493, lng: 103.9940378, name: "Processing Tank E2" },
-    11: { lat: 1.4572493, lng: 103.9939378, name: "Processing Tank F1" },
-    12: { lat: 1.4573493, lng: 103.9940378, name: "Processing Tank F2" },
-    13: { lat: 1.4569493, lng: 103.9935378, name: "Blending Tank G1" },
-    14: { lat: 1.4570493, lng: 103.9936378, name: "Blending Tank G2" },
-    15: { lat: 1.4571493, lng: 103.9935378, name: "Quality Tank H1" },
-    16: { lat: 1.4572493, lng: 103.9936378, name: "Quality Tank H2" },
-    17: { lat: 1.4573493, lng: 103.9935378, name: "Utility Tank I1" },
-    18: { lat: 1.4568493, lng: 103.9931378, name: "Utility Tank I2" },
-    19: { lat: 1.4569493, lng: 103.9932378, name: "Emergency Tank J1" },
-    20: { lat: 1.4570493, lng: 103.9931378, name: "Emergency Tank J2" },
-    21: { lat: 1.4571493, lng: 103.9932378, name: "Control Tank K1" }
+    1: { lat: 1.4568493, lng: 103.9943378, name: "Tank 1" },
+    2: { lat: 1.4569493, lng: 103.9944378, name: "Tank 2" },
+    3: { lat: 1.4570493, lng: 103.9943378, name: "Tank 3" },
+    4: { lat: 1.4571493, lng: 103.9944378, name: "Tank 4" },
+    5: { lat: 1.4572493, lng: 103.9943378, name: "Tank 5" },
+    6: { lat: 1.4573493, lng: 103.9944378, name: "Tank 6" },
+    7: { lat: 1.4568493, lng: 103.9939378, name: "Tank 7" },
+    8: { lat: 1.4569493, lng: 103.9940378, name: "Tank 8" },
+    9: { lat: 1.4570493, lng: 103.9939378, name: "Tank 9" },
+    10: { lat: 1.4571493, lng: 103.9940378, name: "Tank 10" },
+    11: { lat: 1.4572493, lng: 103.9939378, name: "Tank 11" },
+    12: { lat: 1.4573493, lng: 103.9940378, name: "Tank 12" },
+    13: { lat: 1.4569493, lng: 103.9935378, name: "Tank 13" },
+    14: { lat: 1.4570493, lng: 103.9936378, name: "Tank 14" },
+    15: { lat: 1.4571493, lng: 103.9935378, name: "Tank 15" },
+    16: { lat: 1.4572493, lng: 103.9936378, name: "Tank 16" },
+    17: { lat: 1.4573493, lng: 103.9935378, name: "Tank 17" },
+    18: { lat: 1.4568493, lng: 103.9931378, name: "Tank 18" },
+    19: { lat: 1.4569493, lng: 103.9932378, name: "Tank 19" },
+    20: { lat: 1.4570493, lng: 103.9931378, name: "Tank 20" },
+    21: { lat: 1.4571493, lng: 103.9932378, name: "Tank 21" }
 };
+
+// Chart instances
+let temperatureChart = null;
+let comparisonChart = null;
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
@@ -361,6 +366,12 @@ async function loadMoreData() {
             // Update displays
             updateAllDisplays();
             
+            // Update charts if they exist
+            if (document.getElementById('chart')) {
+                createTemperatureChart();
+                createComparisonChart();
+            }
+            
             showNotification(`Loaded ${newData.length} more records`, 'success');
             
             // Update dataset warning
@@ -514,6 +525,12 @@ function handleNewRealtimeData(newRecord) {
     // Update statistics
     const stats = calculateStatistics(allTankData);
     updateMetrics(stats);
+    
+    // Update charts if they exist
+    if (document.getElementById('chart')) {
+        createTemperatureChart();
+        createComparisonChart();
+    }
     
     // Add to latest records table with live badge
     addToLatestRecordsTable(newRecord, true);
@@ -811,17 +828,17 @@ function calculateStatistics(data) {
         warningTanks: 0,
         latestUpdate: null,
         activeTanks: 21,
-        totalHotReadings: 0,
-        hotPercentage: 0,
+        tempStability: 0, // Standard deviation
         updatesPerMinute: updatesPerMinute
     };
     
     const tankLatest = {};
     const tankStats = {};
+    const allTemperatures = []; // For calculating standard deviation
     
     // Initialize tank stats
     for (let i = 1; i <= 21; i++) {
-        tankStats[i] = { sum: 0, count: 0, hotCount: 0 };
+        tankStats[i] = { sum: 0, count: 0 };
     }
     
     // Process records
@@ -837,13 +854,22 @@ function calculateStatistics(data) {
         if (tankStats[tankId]) {
             tankStats[tankId].sum += r.temperature;
             tankStats[tankId].count++;
-            
-            if (r.temperature >= 50) {
-                tankStats[tankId].hotCount++;
-                stats.totalHotReadings++;
-            }
         }
+        
+        // Add to all temperatures for standard deviation
+        allTemperatures.push(r.temperature);
     });
+    
+    // Calculate standard deviation (temperature stability)
+    if (allTemperatures.length > 0) {
+        const mean = allTemperatures.reduce((a, b) => a + b) / allTemperatures.length;
+        const squareDiffs = allTemperatures.map(value => {
+            const diff = value - mean;
+            return diff * diff;
+        });
+        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b) / squareDiffs.length;
+        stats.tempStability = Math.sqrt(avgSquareDiff);
+    }
     
     const latestTemps = Object.values(tankLatest);
     
@@ -872,8 +898,6 @@ function calculateStatistics(data) {
         
         stats.avgTemp = sum / latestTemps.length;
         stats.latestUpdate = new Date(Math.max(...latestTemps.map(r => new Date(r.created_at))));
-        stats.hotPercentage = stats.totalHotReadings > 0 ? 
-            Math.round((stats.totalHotReadings / data.length) * 100) : 0;
     }
     
     console.log("📊 Statistics calculated:", stats);
@@ -899,7 +923,9 @@ function updateMetrics(stats) {
     document.getElementById('warning-tanks').textContent = stats.warningTanks;
     document.getElementById('last-update').textContent = stats.latestUpdate ? 
         stats.latestUpdate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--';
-    document.getElementById('hot-percentage').textContent = stats.hotPercentage + '%';
+    
+    // Update temperature stability
+    document.getElementById('temp-stability').textContent = stats.tempStability ? stats.tempStability.toFixed(2) + '°C' : '--';
     
     // Update total readings with indicator if sampled
     const totalElement = document.getElementById('total-readings');
@@ -944,9 +970,9 @@ function populateTempStatsTable(stats) {
         <td>°C</td>
     </tr>
     <tr>
-        <td>Hot Readings</td>
-        <td><strong>${stats.totalHotReadings.toLocaleString()} (${stats.hotPercentage}%)</strong></td>
-        <td>≥ 50°C</td>
+        <td>Temperature Stability</td>
+        <td><strong>${stats.tempStability ? stats.tempStability.toFixed(2) : '--'}</strong></td>
+        <td>Std Dev</td>
     </tr>
     <tr>
         <td>Data Coverage</td>
@@ -1460,12 +1486,12 @@ function changeRecordsLimit(select) {
 function updateDataStats(stats) {
     const totalElement = document.getElementById('modal-total-records');
     const avgElement = document.getElementById('modal-avg-temp');
-    const hotElement = document.getElementById('modal-hot-percentage');
+    const stabilityElement = document.getElementById('modal-temp-stability');
     const updateElement = document.getElementById('modal-update-rate');
     
     if (totalElement) totalElement.textContent = totalDatabaseCount.toLocaleString();
     if (avgElement) avgElement.textContent = stats.avgTemp ? stats.avgTemp.toFixed(1) + '°C' : '--';
-    if (hotElement) hotElement.textContent = stats.hotPercentage + '%';
+    if (stabilityElement) stabilityElement.textContent = stats.tempStability ? stats.tempStability.toFixed(2) + '°C' : '--';
     if (updateElement) updateElement.textContent = updatesPerMinute > 0 ? `${updatesPerMinute}/min` : '--';
 }
 
@@ -1769,11 +1795,22 @@ function initializeChartsPage() {
     console.log("📈 Initializing charts page...");
     
     if (document.getElementById('chart')) {
-        setTimeout(() => {
-            initializeTankSelector();
-            createTemperatureChart();
-            initializeComparisonChart();
-        }, 100);
+        // Wait for data to load
+        if (allTankData.length === 0) {
+            setTimeout(() => initializeChartsPage(), 1000);
+            return;
+        }
+        
+        initializeTankSelector();
+        createTemperatureChart();
+        initializeComparisonChart();
+        
+        // Add event listeners for chart controls
+        document.getElementById('time-range')?.addEventListener('change', createTemperatureChart);
+        document.getElementById('chart-type')?.addEventListener('change', createTemperatureChart);
+        document.getElementById('compare-type')?.addEventListener('change', createComparisonChart);
+        
+        console.log("✅ Charts page initialized");
     }
 }
 
@@ -1806,7 +1843,12 @@ function initializeComparisonChart() {
     }
     tankSelection.innerHTML = html;
     
-    document.getElementById('compare-type').addEventListener('change', createComparisonChart);
+    // Add event listeners to checkboxes
+    const checkboxes = tankSelection.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', createComparisonChart);
+    });
+    
     createComparisonChart();
 }
 
@@ -1814,14 +1856,14 @@ function createTemperatureChart() {
     const ctx = document.getElementById('chart');
     if (!ctx) return;
     
-    // Use existing Chart.js instance or create new one
-    if (window.temperatureChart instanceof Chart) {
-        window.temperatureChart.destroy();
+    // Destroy existing chart if it exists
+    if (temperatureChart instanceof Chart) {
+        temperatureChart.destroy();
     }
     
-    const tankId = document.getElementById('tank').value;
-    const timeRange = parseInt(document.getElementById('time-range').value);
-    const chartType = document.getElementById('chart-type').value;
+    const tankId = document.getElementById('tank')?.value || 'all';
+    const timeRange = parseInt(document.getElementById('time-range')?.value || 50);
+    const chartType = document.getElementById('chart-type')?.value || 'line';
     
     // Filter data
     let filteredData = allTankData;
@@ -1830,20 +1872,22 @@ function createTemperatureChart() {
     }
     
     // Limit to time range
-    filteredData = filteredData.slice(0, timeRange);
+    filteredData = filteredData.slice(0, Math.min(timeRange, filteredData.length));
     
     // Prepare chart data
-    const labels = filteredData.map(r => new Date(r.created_at).toLocaleTimeString());
+    const labels = filteredData.map(r => new Date(r.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
     const data = filteredData.map(r => r.temperature);
     const colors = filteredData.map(r => r.temperature >= 50 ? '#e53e3e' : '#4299e1');
     
-    window.temperatureChart = new Chart(ctx, {
+    const tankName = tankId === 'all' ? 'All Tanks' : (tankLocations[tankId] ? tankLocations[tankId].name : `Tank ${tankId}`);
+    
+    temperatureChart = new Chart(ctx, {
         type: chartType,
         data: {
-            labels: labels,
+            labels: labels.reverse(),
             datasets: [{
-                label: tankId === 'all' ? 'Temperature (All Tanks)' : `${tankLocations[tankId] ? tankLocations[tankId].name : 'Tank ' + tankId} Temperature`,
-                data: data,
+                label: `${tankName} Temperature`,
+                data: data.reverse(),
                 borderColor: '#4299e1',
                 backgroundColor: chartType === 'bar' ? colors : 'rgba(66, 153, 225, 0.1)',
                 borderWidth: 2,
@@ -1851,7 +1895,7 @@ function createTemperatureChart() {
                 pointBorderColor: '#fff',
                 pointRadius: 4,
                 tension: 0.3,
-                fill: chartType === 'line' || chartType === 'scatter'
+                fill: chartType === 'line'
             }]
         },
         options: {
@@ -1859,7 +1903,7 @@ function createTemperatureChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: `Temperature History ${tankId === 'all' ? '(All Tanks)' : `(${tankLocations[tankId] ? tankLocations[tankId].name : 'Tank ' + tankId})`}`,
+                    text: `Temperature History - ${tankName}`,
                     font: { size: 16 }
                 },
                 tooltip: {
@@ -1891,11 +1935,12 @@ function createComparisonChart() {
     const ctx = document.getElementById('comparison-chart');
     if (!ctx) return;
     
-    if (window.comparisonChart instanceof Chart) {
-        window.comparisonChart.destroy();
+    // Destroy existing chart if it exists
+    if (comparisonChart instanceof Chart) {
+        comparisonChart.destroy();
     }
     
-    const compareType = document.getElementById('compare-type').value;
+    const compareType = document.getElementById('compare-type')?.value || 'current';
     const selectedTanks = Array.from(document.querySelectorAll('#tank-selection input:checked'))
         .map(input => parseInt(input.value));
     
@@ -1926,7 +1971,7 @@ function createComparisonChart() {
     
     const colors = data.map(temp => temp >= 50 ? '#e53e3e' : '#4299e1');
     
-    window.comparisonChart = new Chart(ctx, {
+    comparisonChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -2159,6 +2204,4 @@ console.log("🚀 Tank Monitoring Dashboard initialized");
 console.log("📍 Facility: FIMA Bulking Services, Tanjung Langsat");
 console.log("📡 Supabase URL:", SUPABASE_URL);
 console.log("🔑 API Key:", SUPABASE_ANON_KEY ? "Loaded" : "Missing");
-
 console.log("💡 Tip: Run 'testSupabaseConnection()' in console to debug connection issues");
-

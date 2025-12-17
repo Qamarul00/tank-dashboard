@@ -675,7 +675,7 @@ main {
 }
 
 .summary-card:nth-child(3) {
-    border-left-color: #e53e3e;
+    border-left-color: #805ad5; /* Purple for temperature stability */
 }
 
 .summary-value {
