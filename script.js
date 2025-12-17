@@ -2161,3 +2161,4 @@ console.log("📡 Supabase URL:", SUPABASE_URL);
 console.log("🔑 API Key:", SUPABASE_ANON_KEY ? "Loaded" : "Missing");
 
 console.log("💡 Tip: Run 'testSupabaseConnection()' in console to debug connection issues");
+
