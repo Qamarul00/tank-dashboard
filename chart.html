@@ -63,6 +63,15 @@
                                 <option value="50" selected>Last 50 readings</option>
                                 <option value="100">Last 100 readings</option>
                                 <option value="200">Last 200 readings</option>
+                                <option value="500">Last 500 readings</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="chart-type"><i class='bx bx-bar-chart'></i> Chart Type:</label>
+                            <select id="chart-type">
+                                <option value="line" selected>Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="scatter">Scatter Plot</option>
                             </select>
                         </div>
                     </div>
@@ -77,6 +86,34 @@
                         <i class='bx bx-info-circle'></i>
                         <p>This chart shows real-time temperature fluctuations for each tank. Select a tank from the dropdown to view its temperature history. Temperatures above 50°C are highlighted in red.</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- MULTI TANK COMPARISON -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h2><i class='bx bx-bar-chart-alt'></i> Multi-Tank Comparison</h2>
+                    <div class="chart-controls">
+                        <div class="control-group">
+                            <label for="tank-selection"><i class='bx bx-checkbox-checked'></i> Select Tanks:</label>
+                            <div class="tank-selection" id="tank-selection">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="compare-type"><i class='bx bx-stats'></i> Compare:</label>
+                            <select id="compare-type">
+                                <option value="current">Current Temperatures</option>
+                                <option value="average">Average (Last 24h)</option>
+                                <option value="max">Maximum (Last 24h)</option>
+                                <option value="min">Minimum (Last 24h)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-wrapper">
+                    <canvas id="comparison-chart" height="300"></canvas>
                 </div>
             </div>
 
