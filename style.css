@@ -1,4 +1,4 @@
-/* ===== RESET & BASE STYLES ===== */
+/* ===== style.css ===== */
 * {
     margin: 0;
     padding: 0;
@@ -1626,3 +1626,5 @@ input[type="range"] {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* end */
