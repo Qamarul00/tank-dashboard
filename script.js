@@ -13,6 +13,24 @@ let currentData = [];
 let autoRefreshInterval = null;
 let tankDetailChart = null;
 
+// Tank configuration - hanya Tank 1 hingga Tank 21
+const TANK_CONFIG = {
+    totalTanks: 21
+};
+
+// Generate tank data - hanya Tank 1-21
+function generateTankData() {
+    const tanks = [];
+    for (let i = 1; i <= TANK_CONFIG.totalTanks; i++) {
+        tanks.push({
+            id: i,
+            tank_number: i,
+            name: `Tank ${i}`
+        });
+    }
+    return tanks;
+}
+
 // DOM Elements
 const elements = {
     // Status elements
@@ -184,8 +202,8 @@ async function loadInitialData() {
     try {
         updateConnectionStatus('Loading data...', 'loading');
         
-        // Load tank data
-        const tankData = await loadTankData();
+        // Generate tank data
+        const tankData = generateTankData();
         
         // Load temperature readings
         const readings = await loadTemperatureReadings();
@@ -208,27 +226,36 @@ async function loadInitialData() {
     }
 }
 
-// Load tank data
-async function loadTankData() {
-    const { data, error } = await supabase
-        .from('tanks')
-        .select('*')
-        .order('tank_number');
-    
-    if (error) throw error;
-    return data || [];
-}
-
-// Load temperature readings
+// Load temperature readings from tank_readings table
 async function loadTemperatureReadings() {
-    const { data, error } = await supabase
-        .from('temperature_readings')
-        .select('*, tanks(tank_number, name)')
-        .order('created_at', { ascending: false })
-        .limit(100);
-    
-    if (error) throw error;
-    return data || [];
+    try {
+        const { data, error } = await supabase
+            .from('tank_readings')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        if (error) throw error;
+        
+        // Add tank information to each reading
+        const tankData = generateTankData();
+        const enrichedReadings = data.map(reading => {
+            const tank = tankData.find(t => t.id === reading.tank_id) || 
+                        { id: reading.tank_id, tank_number: reading.tank_id, name: `Tank ${reading.tank_id}` };
+            return {
+                ...reading,
+                tanks: {
+                    tank_number: tank.tank_number,
+                    name: tank.name
+                }
+            };
+        });
+        
+        return enrichedReadings || [];
+    } catch (error) {
+        console.error('Error loading readings:', error);
+        return [];
+    }
 }
 
 // Process and display data
@@ -259,7 +286,20 @@ function processAndDisplayData(tanks, readings) {
 
 // Update summary statistics
 function updateSummaryStats(tanks, readings) {
-    if (readings.length === 0) return;
+    if (readings.length === 0) {
+        // Set default values when no data
+        elements.avgTemp.textContent = '--';
+        elements.maxTemp.textContent = '--';
+        elements.minTemp.textContent = '--';
+        elements.maxTank.textContent = 'Tank --';
+        elements.minTank.textContent = 'Tank --';
+        elements.normalTanks.textContent = '--';
+        elements.warningTanks.textContent = '--';
+        elements.totalReadings.textContent = '0';
+        elements.tempStability.textContent = '--';
+        elements.dataTimestamp.textContent = 'First: -- | Last: --';
+        return;
+    }
     
     // Calculate average temperature
     const avgTemp = readings.reduce((sum, r) => sum + r.temperature, 0) / readings.length;
@@ -271,8 +311,8 @@ function updateSummaryStats(tanks, readings) {
     
     elements.maxTemp.textContent = maxReading.temperature.toFixed(1);
     elements.minTemp.textContent = minReading.temperature.toFixed(1);
-    elements.maxTank.textContent = `Tank ${maxReading.tanks.tank_number}`;
-    elements.minTank.textContent = `Tank ${minReading.tanks.tank_number}`;
+    elements.maxTank.textContent = `Tank ${maxReading.tank_id}`;
+    elements.minTank.textContent = `Tank ${minReading.tank_id}`;
     
     // Count normal and warning tanks
     const tankTemps = {};
@@ -321,7 +361,33 @@ function updateTankStatusTable(tanks, readings) {
     
     tanks.forEach(tank => {
         const reading = latestByTank[tank.id];
-        if (!reading) return;
+        
+        // If no reading for this tank, create a placeholder
+        if (!reading) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>Tank ${tank.tank_number}</strong></td>
+                <td>
+                    <div class="temp-display status-normal">
+                        --°C
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-normal">
+                        <i class='bx bx-minus-circle'></i>
+                        No Data
+                    </span>
+                </td>
+                <td>--</td>
+                <td>
+                    <button class="action-btn" onclick="showTankDetails(${tank.id})">
+                        <i class='bx bx-show'></i>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+            return;
+        }
         
         const row = document.createElement('tr');
         const status = reading.temperature >= 50 ? 'warning' : 'normal';
@@ -329,7 +395,7 @@ function updateTankStatusTable(tanks, readings) {
         const statusClass = reading.temperature >= 50 ? 'status-warning' : 'status-normal';
         
         row.innerHTML = `
-            <td><strong>Tank ${tank.tank_number}</strong>${tank.name ? `<br><small>${tank.name}</small>` : ''}</td>
+            <td><strong>Tank ${tank.tank_number}</strong></td>
             <td>
                 <div class="temp-display ${statusClass}">
                     ${reading.temperature.toFixed(1)}°C
@@ -356,7 +422,19 @@ function updateTankStatusTable(tanks, readings) {
 // Update temperature statistics table
 function updateTempStats(readings) {
     const tableBody = elements.tempStatsTable;
-    if (!tableBody || readings.length === 0) return;
+    if (!tableBody) return;
+    
+    if (readings.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="loading-cell">
+                    <i class='bx bx-data'></i>
+                    <span>No temperature data available</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
     
     const temps = readings.map(r => r.temperature);
     const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
@@ -398,6 +476,18 @@ function updateLatestRecords(readings) {
     const limit = parseInt(document.getElementById('records-limit')?.value || 20);
     const displayReadings = readings.slice(0, limit);
     
+    if (displayReadings.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="loading-cell">
+                    <i class='bx bx-data'></i>
+                    <span>No records available</span>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
     tableBody.innerHTML = '';
     
     displayReadings.forEach(reading => {
@@ -407,7 +497,7 @@ function updateLatestRecords(readings) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${reading.id}</td>
-            <td>Tank ${reading.tanks.tank_number}</td>
+            <td>Tank ${reading.tank_id}</td>
             <td>
                 <span class="temp-badge ${status}">
                     ${reading.temperature.toFixed(1)}°C
@@ -447,31 +537,48 @@ function updateTankOverview(tanks, readings) {
     
     tanks.forEach(tank => {
         const reading = latestByTank[tank.id];
-        if (!reading) return;
-        
-        const status = reading.temperature >= 50 ? 'warning' : 'normal';
-        const statusColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
         
         const card = document.createElement('div');
         card.className = 'tank-card';
         card.onclick = () => showTankDetails(tank.id);
         
-        card.innerHTML = `
-            <div class="tank-card-header">
-                <h4>Tank ${tank.tank_number}</h4>
-                <div class="temp-circle" style="border-color: ${statusColor}">
-                    ${reading.temperature.toFixed(1)}°C
+        if (!reading) {
+            // No data for this tank
+            card.innerHTML = `
+                <div class="tank-card-header">
+                    <h4>Tank ${tank.tank_number}</h4>
+                    <div class="temp-circle" style="border-color: #6c757d">
+                        --°C
+                    </div>
                 </div>
-            </div>
-            <div class="tank-card-content">
-                <p class="tank-name">${tank.name || 'No name'}</p>
-                <div class="tank-status">
-                    <span class="status-dot" style="background: ${statusColor}"></span>
-                    <span>${status === 'warning' ? 'Too Hot' : 'Normal'}</span>
+                <div class="tank-card-content">
+                    <div class="tank-status">
+                        <span class="status-dot" style="background: #6c757d"></span>
+                        <span>No Data</span>
+                    </div>
+                    <p class="tank-update">--</p>
                 </div>
-                <p class="tank-update">Updated ${formatTimeAgo(reading.created_at)}</p>
-            </div>
-        `;
+            `;
+        } else {
+            const status = reading.temperature >= 50 ? 'warning' : 'normal';
+            const statusColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
+            
+            card.innerHTML = `
+                <div class="tank-card-header">
+                    <h4>Tank ${tank.tank_number}</h4>
+                    <div class="temp-circle" style="border-color: ${statusColor}">
+                        ${reading.temperature.toFixed(1)}°C
+                    </div>
+                </div>
+                <div class="tank-card-content">
+                    <div class="tank-status">
+                        <span class="status-dot" style="background: ${statusColor}"></span>
+                        <span>${status === 'warning' ? 'Too Hot' : 'Normal'}</span>
+                    </div>
+                    <p class="tank-update">Updated ${formatTimeAgo(reading.created_at)}</p>
+                </div>
+            `;
+        }
         
         grid.appendChild(card);
     });
@@ -496,20 +603,27 @@ function updateMapMarkers(tanks, readings) {
     // Add markers for each tank
     tanks.forEach(tank => {
         const reading = latestByTank[tank.id];
-        if (!reading) return;
         
-        // Generate random coordinates around Tanjung Langsat (for demo)
+        // Generate coordinates around Tanjung Langsat
         const lat = 1.4600 + (Math.random() - 0.5) * 0.01;
         const lng = 104.0300 + (Math.random() - 0.5) * 0.01;
         
-        const status = reading.temperature >= 50 ? 'warning' : 'normal';
-        const iconColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
+        let iconColor = '#6c757d'; // Default gray for no data
+        let temperature = '--';
+        let statusText = 'No Data';
+        
+        if (reading) {
+            const status = reading.temperature >= 50 ? 'warning' : 'normal';
+            iconColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
+            temperature = reading.temperature.toFixed(1);
+            statusText = status === 'warning' ? '⚠️ Too Hot' : '✅ Normal';
+        }
         
         // Create custom icon
         const icon = L.divIcon({
             html: `
                 <div class="map-marker" style="border-color: ${iconColor}">
-                    <div class="marker-temperature">${reading.temperature.toFixed(1)}°C</div>
+                    <div class="marker-temperature">${temperature}°C</div>
                     <div class="marker-label">Tank ${tank.tank_number}</div>
                 </div>
             `,
@@ -523,9 +637,9 @@ function updateMapMarkers(tanks, readings) {
             .bindPopup(`
                 <div class="map-popup">
                     <h3>Tank ${tank.tank_number}</h3>
-                    <p><strong>Temperature:</strong> ${reading.temperature.toFixed(1)}°C</p>
-                    <p><strong>Status:</strong> ${status === 'warning' ? '⚠️ Too Hot' : '✅ Normal'}</p>
-                    <p><strong>Last Update:</strong> ${formatDateTime(reading.created_at)}</p>
+                    <p><strong>Temperature:</strong> ${temperature}°C</p>
+                    <p><strong>Status:</strong> ${statusText}</p>
+                    <p><strong>Last Update:</strong> ${reading ? formatDateTime(reading.created_at) : '--'}</p>
                     <button onclick="showTankDetails(${tank.id})" class="popup-btn">
                         View Details
                     </button>
@@ -544,41 +658,60 @@ function updateMapMarkers(tanks, readings) {
 // Show tank details modal
 async function showTankDetails(tankId) {
     try {
-        // Fetch tank details
-        const { data: tank, error: tankError } = await supabase
-            .from('tanks')
-            .select('*')
-            .eq('id', tankId)
-            .single();
+        // Generate tank info
+        const tankData = generateTankData();
+        const tank = tankData.find(t => t.id === tankId) || {
+            id: tankId,
+            tank_number: tankId,
+            name: `Tank ${tankId}`
+        };
         
-        if (tankError) throw tankError;
-        
-        // Fetch temperature history
-        const { data: history, error: historyError } = await supabase
-            .from('temperature_readings')
+        // Fetch temperature history for this tank
+        const { data: history, error } = await supabase
+            .from('tank_readings')
             .select('*')
             .eq('tank_id', tankId)
             .order('created_at', { ascending: false })
             .limit(50);
         
-        if (historyError) throw historyError;
+        if (error) throw error;
         
         // Update modal content
         document.getElementById('modal-tank-id').textContent = `Tank ${tank.tank_number}`;
-        document.getElementById('modal-tank-status').textContent = 
-            history[0]?.temperature >= 50 ? 'Too Hot' : 'Normal';
-        document.getElementById('modal-tank-temp').textContent = 
-            history[0]?.temperature?.toFixed(1) || '--';
-        document.getElementById('modal-last-update').textContent = 
-            history[0] ? formatDateTime(history[0].created_at) : '--';
-        document.getElementById('modal-update-count').textContent = history.length;
+        
+        if (history && history.length > 0) {
+            const currentTemp = history[0].temperature;
+            document.getElementById('modal-tank-status').textContent = 
+                currentTemp >= 50 ? 'Too Hot' : 'Normal';
+            document.getElementById('modal-tank-temp').textContent = currentTemp.toFixed(1);
+            document.getElementById('modal-last-update').textContent = formatDateTime(history[0].created_at);
+            document.getElementById('modal-update-count').textContent = history.length;
+        } else {
+            document.getElementById('modal-tank-status').textContent = 'No Data';
+            document.getElementById('modal-tank-temp').textContent = '--';
+            document.getElementById('modal-last-update').textContent = '--';
+            document.getElementById('modal-update-count').textContent = '0';
+        }
         
         // Show modal
         elements.tankModal.style.display = 'flex';
         
         // Create chart if history exists
-        if (history.length > 0) {
+        if (history && history.length > 0) {
             createTankDetailChart(history.reverse());
+        } else {
+            // Clear chart area if no data
+            const chartCanvas = document.getElementById('tank-detail-chart');
+            if (chartCanvas) {
+                const ctx = chartCanvas.getContext('2d');
+                ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+                ctx.fillStyle = '#f5f5f5';
+                ctx.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.font = '14px Arial';
+                ctx.fillText('No temperature data available', chartCanvas.width / 2, chartCanvas.height / 2);
+            }
         }
         
     } catch (error) {
@@ -658,7 +791,7 @@ function startRealtimeUpdates() {
     const channel = supabase
         .channel('temperature-changes')
         .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'temperature_readings' },
+            { event: '*', schema: 'public', table: 'tank_readings' },
             () => loadInitialData()
         )
         .subscribe();
@@ -723,10 +856,9 @@ function updateLastUpdate() {
 // Refresh map data
 function refreshMapData() {
     if (map && currentData.length > 0) {
-        // Re-fetch tank data and update map
-        loadTankData().then(tanks => {
-            updateMapMarkers(tanks, currentData);
-        });
+        // Regenerate tank data and update map
+        const tanks = generateTankData();
+        updateMapMarkers(tanks, currentData);
     }
 }
 
@@ -772,8 +904,8 @@ function sortTableByTemp() {
     const rows = Array.from(tbody.querySelectorAll('tr'));
     
     rows.sort((a, b) => {
-        const tempA = parseFloat(a.querySelector('.temp-display').textContent);
-        const tempB = parseFloat(b.querySelector('.temp-display').textContent);
+        const tempA = parseFloat(a.querySelector('.temp-display').textContent) || 0;
+        const tempB = parseFloat(b.querySelector('.temp-display').textContent) || 0;
         return tempB - tempA; // Descending order
     });
     
@@ -804,9 +936,9 @@ function exportData() {
     }
     
     const csvContent = [
-        ['Tank', 'Temperature (°C)', 'Date Time', 'Status'].join(','),
+        ['Tank ID', 'Temperature (°C)', 'Date Time', 'Status'].join(','),
         ...currentData.map(r => [
-            `Tank ${r.tanks.tank_number}`,
+            r.tank_id,
             r.temperature,
             r.created_at,
             r.temperature >= 50 ? 'Too Hot' : 'Normal'
@@ -874,7 +1006,7 @@ window.exportData = exportData;
 window.testConnection = async function() {
     try {
         console.log('Testing Supabase connection...');
-        const { data, error } = await supabase.from('temperature_readings').select('count').limit(1);
+        const { data, error } = await supabase.from('tank_readings').select('count').limit(1);
         if (error) throw error;
         console.log('✓ Connection successful');
         return true;

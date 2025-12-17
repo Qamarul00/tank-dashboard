@@ -1,4 +1,4 @@
-// Supabase Configuration (same as main script)
+// Supabase Configuration
 const SUPABASE_URL = 'https://zhjzbvghigeuarxvucob.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w';
 
@@ -12,6 +12,24 @@ let hourlyChart = null;
 let comparisonChart = null;
 let autoRefresh = false;
 let autoRefreshInterval = null;
+
+// Tank configuration - hanya Tank 1 hingga Tank 21
+const TANK_CONFIG = {
+    totalTanks: 21
+};
+
+// Generate tank data - hanya Tank 1-21
+function generateTankData() {
+    const tanks = [];
+    for (let i = 1; i <= TANK_CONFIG.totalTanks; i++) {
+        tanks.push({
+            id: i,
+            tank_number: i,
+            name: `Tank ${i}`
+        });
+    }
+    return tanks;
+}
 
 // DOM Elements
 const elements = {
@@ -76,17 +94,13 @@ function updateChartTime() {
     }
 }
 
-// Load tanks list
+// Load tanks list - hanya Tank 1-21
 async function loadTanks() {
     try {
         if (!elements.tankSelect) return;
         
-        const { data: tanks, error } = await supabase
-            .from('tanks')
-            .select('id, tank_number, name')
-            .order('tank_number');
-        
-        if (error) throw error;
+        // Generate tank data - Tank 1-21 sahaja
+        const tanks = generateTankData();
         
         // Clear existing options
         elements.tankSelect.innerHTML = '<option value="">All Tanks</option>';
@@ -96,13 +110,13 @@ async function loadTanks() {
             tanks.forEach(tank => {
                 const option = document.createElement('option');
                 option.value = tank.id;
-                option.textContent = `Tank ${tank.tank_number}${tank.name ? ' - ' + tank.name : ''}`;
+                option.textContent = `Tank ${tank.tank_number}`;
                 elements.tankSelect.appendChild(option);
             });
             
-            console.log('Loaded tanks:', tanks.length);
+            console.log('Generated tanks:', tanks.length);
         } else {
-            elements.tankSelect.innerHTML = '<option value="">No tanks found</option>';
+            elements.tankSelect.innerHTML = '<option value="">No tanks configured</option>';
         }
         
     } catch (error) {
@@ -195,7 +209,7 @@ function setupEventListeners() {
     }
 }
 
-// Load chart data
+// Load chart data from tank_readings table
 async function loadChartData() {
     if (!elements.loadingState || !elements.errorState || !elements.chartWrapper) return;
     
@@ -207,10 +221,10 @@ async function loadChartData() {
         const selectedTankId = elements.tankSelect ? elements.tankSelect.value : '';
         const limit = elements.timeRangeSelect ? parseInt(elements.timeRangeSelect.value) || 50 : 50;
         
-        // Build query
+        // Build query for tank_readings table
         let query = supabase
-            .from('temperature_readings')
-            .select('temperature, created_at, tank_id, tanks(tank_number, name)')
+            .from('tank_readings')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(limit);
         
@@ -288,10 +302,12 @@ function processChartData(readings) {
         borderColors.push(colors.border);
     });
     
-    const tankNumber = readings[0]?.tanks?.tank_number || 'Multiple';
-    const tankName = readings[0]?.tanks?.name || '';
     const selectedTankId = elements.tankSelect ? elements.tankSelect.value : '';
-    const tankLabel = selectedTankId ? `Tank ${tankNumber}${tankName ? ' - ' + tankName : ''}` : 'All Tanks';
+    let tankLabel = 'All Tanks';
+    
+    if (selectedTankId) {
+        tankLabel = `Tank ${selectedTankId}`;
+    }
     
     return {
         labels: labels,
@@ -397,21 +413,6 @@ function updateChart(chartData) {
                             return tooltipItems[0].label;
                         }
                     }
-                },
-                zoom: {
-                    zoom: {
-                        wheel: {
-                            enabled: true,
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'xy',
-                    },
-                    pan: {
-                        enabled: true,
-                        mode: 'xy',
-                    }
                 }
             },
             scales: {
@@ -470,7 +471,13 @@ function updateChart(chartData) {
 
 // Update chart statistics
 function updateStatistics(readings) {
-    if (readings.length === 0) return;
+    if (readings.length === 0) {
+        if (elements.statAvg) elements.statAvg.textContent = '--°C';
+        if (elements.statMax) elements.statMax.textContent = '--°C';
+        if (elements.statMin) elements.statMin.textContent = '--°C';
+        if (elements.statStd) elements.statStd.textContent = '--';
+        return;
+    }
     
     const temperatures = readings.map(r => r.temperature);
     const avg = temperatures.reduce((a, b) => a + b, 0) / temperatures.length;
@@ -487,7 +494,11 @@ function updateStatistics(readings) {
 
 // Update additional charts
 function updateAdditionalCharts(readings) {
-    if (readings.length === 0) return;
+    if (readings.length === 0) {
+        // Clear additional charts if no data
+        clearAdditionalCharts();
+        return;
+    }
     
     // Temperature distribution chart
     createDistributionChart(readings);
@@ -497,6 +508,51 @@ function updateAdditionalCharts(readings) {
     
     // Tank comparison chart (if multiple tanks)
     createComparisonChart(readings);
+}
+
+// Clear additional charts
+function clearAdditionalCharts() {
+    const distributionCtx = document.getElementById('distribution-chart');
+    const hourlyCtx = document.getElementById('hourly-chart');
+    const comparisonCtx = document.getElementById('comparison-chart');
+    
+    if (distributionChart) distributionChart.destroy();
+    if (hourlyChart) hourlyChart.destroy();
+    if (comparisonChart) comparisonChart.destroy();
+    
+    // Clear canvas with "no data" message
+    if (distributionCtx) {
+        const ctx = distributionCtx.getContext('2d');
+        ctx.clearRect(0, 0, distributionCtx.width, distributionCtx.height);
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, distributionCtx.width, distributionCtx.height);
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.font = '14px Arial';
+        ctx.fillText('No data available', distributionCtx.width / 2, distributionCtx.height / 2);
+    }
+    
+    if (hourlyCtx) {
+        const ctx = hourlyCtx.getContext('2d');
+        ctx.clearRect(0, 0, hourlyCtx.width, hourlyCtx.height);
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, hourlyCtx.width, hourlyCtx.height);
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.font = '14px Arial';
+        ctx.fillText('No data available', hourlyCtx.width / 2, hourlyCtx.height / 2);
+    }
+    
+    if (comparisonCtx) {
+        const ctx = comparisonCtx.getContext('2d');
+        ctx.clearRect(0, 0, comparisonCtx.width, comparisonCtx.height);
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, comparisonCtx.width, comparisonCtx.height);
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.font = '14px Arial';
+        ctx.fillText('Select "All Tanks" to see comparison', comparisonCtx.width / 2, comparisonCtx.height / 2);
+    }
 }
 
 // Create distribution chart
@@ -656,7 +712,7 @@ function createComparisonChart(readings) {
         const tankId = r.tank_id;
         if (!tankGroups[tankId]) {
             tankGroups[tankId] = {
-                tank: r.tanks,
+                tank_id: tankId,
                 temperatures: []
             };
         }
@@ -665,7 +721,8 @@ function createComparisonChart(readings) {
     
     const tankIds = Object.keys(tankGroups);
     if (tankIds.length <= 1) {
-        ctx.parentElement.innerHTML = '<p>Select "All Tanks" to see comparison</p>';
+        // Show message instead of chart
+        ctx.parentElement.innerHTML = '<p class="no-comparison">Select "All Tanks" to see tank comparison</p>';
         return;
     }
     
@@ -676,7 +733,7 @@ function createComparisonChart(readings) {
     Object.values(tankGroups).forEach(group => {
         if (group.temperatures.length > 0) {
             const avg = group.temperatures.reduce((a, b) => a + b, 0) / group.temperatures.length;
-            tankLabels.push(`Tank ${group.tank.tank_number}`);
+            tankLabels.push(`Tank ${group.tank_id}`);
             tankAverages.push(avg);
         }
     });
@@ -723,13 +780,12 @@ function createComparisonChart(readings) {
 function updateChartInfo(readings) {
     if (!elements.chartDataInfo || !elements.dataCount) return;
     
-    const tankId = elements.tankSelect?.value;
-    const tankNumber = readings[0]?.tanks?.tank_number || 'Multiple';
-    const tankName = readings[0]?.tanks?.name || '';
+    const selectedTankId = elements.tankSelect?.value;
     
-    let info = tankId ? 
-        `Tank ${tankNumber}${tankName ? ' - ' + tankName : ''}` : 
-        'All Tanks';
+    let info = 'All Tanks';
+    if (selectedTankId) {
+        info = `Tank ${selectedTankId}`;
+    }
     
     info += ` | ${readings.length} readings`;
     
@@ -962,7 +1018,7 @@ window.exportChartData = exportChartData;
 window.testChartConnection = async function() {
     try {
         console.log('Testing Supabase connection...');
-        const { data, error } = await supabase.from('temperature_readings').select('count').limit(1);
+        const { data, error } = await supabase.from('tank_readings').select('count').limit(1);
         if (error) throw error;
         console.log('✓ Connection successful');
         return true;
