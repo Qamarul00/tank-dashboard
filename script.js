@@ -1,4 +1,3 @@
-// ==================== CONFIGURATION ====================
 const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w";
 
@@ -2160,4 +2159,5 @@ console.log("🚀 Tank Monitoring Dashboard initialized");
 console.log("📍 Facility: FIMA Bulking Services, Tanjung Langsat");
 console.log("📡 Supabase URL:", SUPABASE_URL);
 console.log("🔑 API Key:", SUPABASE_ANON_KEY ? "Loaded" : "Missing");
+
 console.log("💡 Tip: Run 'testSupabaseConnection()' in console to debug connection issues");
