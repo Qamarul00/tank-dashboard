@@ -1,5 +1,5 @@
 // ==================== CONFIGURATION ====================
-const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co/rest/v1";
+const SUPABASE_URL = "https://zhjzbvghigeuarxvucob.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoanpidmdoaWdldWFyeHZ1Y29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NzAxOTUsImV4cCI6MjA4MDM0NjE5NX0.TF0dz6huz6tPAiXe3pz04Fuafh7dewIVNqWpOzJbm2w";
 
 // Performance settings
@@ -49,9 +49,10 @@ const tankLocations = {
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("Initializing Tank Monitoring Dashboard...");
+    console.log("🚀 Initializing Tank Monitoring Dashboard...");
+    console.log("📍 Location: FIMA Bulking Services, Tanjung Langsat");
     
-    // Initialize Supabase
+    // Initialize Supabase with enhanced configuration
     initializeSupabase();
     
     // Add custom styles
@@ -59,12 +60,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize dashboard
     if (document.getElementById("tank-overview")) {
+        console.log("📊 Initializing dashboard...");
         populateDashboard();
         setTimeout(initMap, 1000);
     }
     
     // Initialize charts page
     if (document.getElementById("chart")) {
+        console.log("📈 Initializing charts page...");
         initializeChartsPage();
     }
     
@@ -82,54 +85,162 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup realtime alert close
     document.querySelector('.alert-close')?.addEventListener('click', closeRealtimeAlert);
+    
+    // Debug button (optional - remove in production)
+    setupDebugButton();
 });
 
 function initializeSupabase() {
     try {
         if (window.supabase) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            console.log("Supabase client initialized");
+            console.log("🔄 Initializing Supabase client...");
+            console.log("📡 Supabase URL:", SUPABASE_URL);
+            
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: false
+                },
+                global: {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                },
+                db: {
+                    schema: 'public'
+                },
+                realtime: {
+                    params: {
+                        eventsPerSecond: 10
+                    }
+                }
+            });
+            
+            console.log("✅ Supabase client initialized successfully");
+            
+            // Test connection immediately
+            testConnection();
+            
         } else {
-            console.error("Supabase library not loaded");
-            showNotification('Supabase library failed to load', 'error');
+            console.error("❌ Supabase library not loaded!");
+            showNotification('Supabase library failed to load. Check script inclusion.', 'error');
+            // Load Supabase dynamically if not loaded
+            loadSupabaseDynamically();
         }
     } catch (error) {
-        console.error("Failed to initialize Supabase:", error);
+        console.error("❌ Failed to initialize Supabase:", error);
+        showNotification('Failed to initialize database connection', 'error');
     }
+}
+
+async function testConnection() {
+    if (!supabase) return;
+    
+    try {
+        console.log("🔍 Testing Supabase connection...");
+        const { data, error } = await supabase
+            .from('tank_readings')
+            .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+            console.error("❌ Supabase test failed:", error);
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            console.error("Error details:", error.details);
+            
+            if (error.code === '42501') {
+                console.error("⚠️ RLS Policy issue detected!");
+                showNotification('Database permission error. Check RLS policies.', 'error');
+            } else if (error.code === '42P01') {
+                console.error("⚠️ Table does not exist!");
+                showNotification('Database table not found.', 'error');
+            }
+        } else {
+            console.log("✅ Supabase connection test successful");
+            console.log("📊 Database table exists and is accessible");
+        }
+    } catch (error) {
+        console.error("❌ Exception during connection test:", error);
+    }
+}
+
+function loadSupabaseDynamically() {
+    console.log("🔄 Attempting to load Supabase dynamically...");
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    script.onload = function() {
+        console.log("✅ Supabase library loaded dynamically");
+        initializeSupabase();
+    };
+    script.onerror = function() {
+        console.error("❌ Failed to load Supabase library");
+        showNotification('Cannot load database library. Using offline mode.', 'warning');
+    };
+    document.head.appendChild(script);
 }
 
 // ==================== DATA FETCHING ====================
 async function fetchAllTankData() {
     try {
-        console.log("Fetching tank data...");
+        console.log("📥 Fetching tank data...");
+        console.log("🔍 Debug: Supabase client exists:", !!supabase);
+        
         updateConnectionStatus('connecting');
-        showLoadProgress(true, "Fetching data...");
+        showLoadProgress(true, "Connecting to database...");
         
         if (!supabase) {
-            throw new Error("Supabase client not initialized");
+            console.error("❌ Supabase client not initialized");
+            throw new Error("Supabase client not initialized. Using mock data.");
         }
         
-        // 1. Get total count from database
+        // First, test with a simple query
+        console.log("🔍 Testing database access...");
+        const { data: testData, error: testError } = await supabase
+            .from('tank_readings')
+            .select('*')
+            .limit(1);
+            
+        if (testError) {
+            console.error("❌ Database test failed:", testError);
+            
+            // Provide specific error messages
+            if (testError.code === '42501') {
+                throw new Error("RLS Policy Error: Check Supabase dashboard > Authentication > Policies for tank_readings table");
+            } else if (testError.code === '42P01') {
+                throw new Error("Table not found: 'tank_readings' table does not exist");
+            } else if (testError.message.includes('JWT')) {
+                throw new Error("Authentication error: Invalid API key");
+            } else {
+                throw testError;
+            }
+        }
+        
+        console.log("✅ Database test successful");
+        
+        // Get total count from database
+        console.log("🔍 Getting record count...");
         const { count: totalCount, error: countError } = await supabase
             .from('tank_readings')
             .select('*', { count: 'exact', head: true });
         
         if (countError) throw countError;
         
-        totalDatabaseCount = totalCount;
-        console.log(`Database has ${totalCount} total records`);
+        totalDatabaseCount = totalCount || 0;
+        console.log(`📊 Database has ${totalCount || 0} total records`);
         
-        // 2. Determine fetching strategy based on dataset size
+        // Determine fetching strategy based on dataset size
         let data = [];
         
         if (totalCount <= MAX_RECORDS_DISPLAY) {
             // Small dataset: fetch all
-            console.log(`Small dataset, fetching all ${totalCount} records...`);
+            console.log(`📥 Small dataset, fetching all ${totalCount} records...`);
             data = await fetchRecords(0, totalCount);
             
         } else if (totalCount <= 10000) {
             // Medium dataset: fetch for processing
-            console.log(`Medium dataset, fetching ${MAX_RECORDS_PROCESS} records for statistics...`);
+            console.log(`📥 Medium dataset, fetching ${MAX_RECORDS_PROCESS} records for statistics...`);
             data = await fetchRecords(0, MAX_RECORDS_PROCESS);
             
             // Show dataset warning
@@ -137,49 +248,74 @@ async function fetchAllTankData() {
             
         } else {
             // Large dataset: fetch only for display
-            console.log(`Large dataset, fetching ${MAX_RECORDS_DISPLAY} most recent records...`);
+            console.log(`📥 Large dataset, fetching ${MAX_RECORDS_DISPLAY} most recent records...`);
             data = await fetchLatestRecords(MAX_RECORDS_DISPLAY);
             
             // Show large dataset warning
             showDatasetWarning(totalCount, data.length, true);
         }
         
-        allTankData = data;
+        allTankData = data || [];
         updateConnectionStatus('connected');
         showLoadProgress(false);
         
-        console.log(`Data fetch complete: ${data.length} records loaded`);
+        console.log(`✅ Data fetch complete: ${data.length} records loaded`);
         return data;
         
     } catch (error) {
-        console.error("Error fetching tank data:", error);
-        showNotification('Using simulated data. Connection issue.', 'warning');
+        console.error("❌ Error fetching tank data:", error);
+        console.error("Full error details:", error);
+        
+        // Show user-friendly error message
+        const errorMessage = error.message || "Unknown error";
+        showNotification(`Using simulated data. ${errorMessage}`, 'warning');
+        
         updateConnectionStatus('disconnected');
         showLoadProgress(false);
-        return generateMockData(735);
+        
+        // Generate mock data for demo purposes
+        const mockData = generateMockData(735);
+        allTankData = mockData;
+        totalDatabaseCount = mockData.length;
+        
+        return mockData;
     }
 }
 
 async function fetchRecords(offset, limit) {
+    console.log(`📥 Fetching records ${offset} to ${offset + limit - 1}...`);
+    
     const { data, error } = await supabase
         .from('tank_readings')
         .select('*')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
     
-    if (error) throw error;
-    return data;
+    if (error) {
+        console.error("❌ Fetch records error:", error);
+        throw error;
+    }
+    
+    console.log(`✅ Fetched ${data?.length || 0} records`);
+    return data || [];
 }
 
 async function fetchLatestRecords(limit) {
+    console.log(`📥 Fetching ${limit} latest records...`);
+    
     const { data, error } = await supabase
         .from('tank_readings')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
     
-    if (error) throw error;
-    return data;
+    if (error) {
+        console.error("❌ Fetch latest records error:", error);
+        throw error;
+    }
+    
+    console.log(`✅ Fetched ${data?.length || 0} latest records`);
+    return data || [];
 }
 
 // ==================== LOAD MORE FUNCTIONALITY ====================
@@ -241,7 +377,7 @@ async function loadMoreData() {
         }
         
     } catch (error) {
-        console.error("Error loading more data:", error);
+        console.error("❌ Error loading more data:", error);
         showNotification('Failed to load more data', 'error');
     } finally {
         isLoadingMore = false;
@@ -256,10 +392,22 @@ async function loadMoreData() {
 async function setupRealtimeUpdates() {
     try {
         if (!supabase) {
+            console.error("❌ Supabase client not available for realtime");
             throw new Error("Supabase client not available");
         }
         
-        console.log("Setting up realtime subscription...");
+        console.log("🔄 Setting up realtime subscription...");
+        
+        // First, test if realtime is available
+        const { data: testData, error: testError } = await supabase
+            .from('tank_readings')
+            .select('*')
+            .limit(1);
+        
+        if (testError) {
+            console.error("❌ Cannot setup realtime - database error:", testError);
+            throw testError;
+        }
         
         // Subscribe to INSERT events
         realtimeSubscription = supabase
@@ -272,19 +420,32 @@ async function setupRealtimeUpdates() {
                     table: 'tank_readings'
                 },
                 (payload) => {
-                    console.log('New realtime data:', payload.new);
+                    console.log('📡 New realtime data:', payload.new);
+                    handleNewRealtimeData(payload.new);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'tank_readings'
+                },
+                (payload) => {
+                    console.log('📡 Updated realtime data:', payload.new);
                     handleNewRealtimeData(payload.new);
                 }
             )
             .subscribe((status) => {
-                console.log('Realtime subscription status:', status);
+                console.log('📡 Realtime subscription status:', status);
                 
                 if (status === 'SUBSCRIBED') {
                     updateConnectionStatus('connected');
                     showRealtimeAlert();
                     updateRealtimeIndicator(true);
                     showNotification('Live updates enabled', 'success');
-                } else if (status === 'CHANNEL_ERROR') {
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    console.error("❌ Realtime subscription failed:", status);
                     updateConnectionStatus('disconnected');
                     updateRealtimeIndicator(false);
                     showNotification('Live updates disconnected', 'warning');
@@ -296,8 +457,8 @@ async function setupRealtimeUpdates() {
         return realtimeSubscription;
         
     } catch (error) {
-        console.error("Failed to setup realtime updates:", error);
-        showNotification('Failed to enable live updates', 'error');
+        console.error("❌ Failed to setup realtime updates:", error);
+        showNotification('Failed to enable live updates. Using auto-refresh.', 'error');
         updateRealtimeIndicator(false);
         // Fallback to auto-refresh
         startAutoRefresh();
@@ -309,7 +470,7 @@ function stopRealtimeUpdates() {
     if (realtimeSubscription) {
         supabase.removeChannel(realtimeSubscription);
         realtimeSubscription = null;
-        console.log("Realtime updates stopped");
+        console.log("🛑 Realtime updates stopped");
         updateRealtimeIndicator(false);
         showNotification('Live updates disabled', 'info');
     }
@@ -366,8 +527,10 @@ function handleNewRealtimeData(newRecord) {
 function startAutoRefresh(intervalSeconds = 30) {
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
     
+    console.log(`🔄 Starting auto-refresh (every ${intervalSeconds}s)`);
+    
     autoRefreshInterval = setInterval(async () => {
-        console.log(`Auto-refresh at ${new Date().toLocaleTimeString()}`);
+        console.log(`🔄 Auto-refresh at ${new Date().toLocaleTimeString()}`);
         await refreshDataSilently();
     }, intervalSeconds * 1000);
     
@@ -385,7 +548,7 @@ function stopAutoRefresh() {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
-        console.log("Auto-refresh stopped");
+        console.log("🛑 Auto-refresh stopped");
         
         // Update button
         const btn = document.getElementById('auto-refresh-toggle');
@@ -400,6 +563,7 @@ function stopAutoRefresh() {
 
 async function refreshDataSilently() {
     try {
+        console.log("🔄 Silent refresh in progress...");
         const data = await fetchAllTankData();
         const stats = calculateStatistics(data);
         const latestValues = await fetchLatestTankValues();
@@ -408,27 +572,31 @@ async function refreshDataSilently() {
         window.latestTankData = latestValues;
         updateAllDisplays();
         
-        console.log(`Auto-refresh completed: ${data.length} records`);
+        console.log(`✅ Auto-refresh completed: ${data.length} records`);
     } catch (error) {
-        console.error("Auto-refresh failed:", error);
+        console.error("❌ Auto-refresh failed:", error);
     }
 }
 
 // ==================== UI UPDATES ====================
 function updateAllDisplays() {
-    if (!window.latestTankData) return;
+    if (!window.latestTankData) {
+        console.log("⚠️ No latest tank data available");
+        return;
+    }
     
     // Update 21 Tank Overview
     const tankOverview = document.getElementById("tank-overview");
     if (tankOverview) {
+        console.log("🔄 Updating tank overview...");
         tankOverview.innerHTML = "";
         for (let i = 1; i <= 21; i++) {
             const tempData = window.latestTankData[i];
             const temp = tempData ? tempData.temperature : null;
             const statusClass = temp ? getStatusClass(temp) : '';
             const iconClass = temp ? getStatusIcon(temp) : 'bx bx-thermometer';
-            
             const tankName = tankLocations[i] ? tankLocations[i].name : `Tank ${i}`;
+            
             tankOverview.innerHTML += `
             <li class="${statusClass}">
                 <i class='${iconClass}'></i>
@@ -438,6 +606,7 @@ function updateAllDisplays() {
                 </span>
             </li>`;
         }
+        console.log("✅ Tank overview updated");
     }
     
     // Update Tank Status Table
@@ -456,6 +625,7 @@ function updateTankDisplay(tankId, temperature) {
     const isHot = temperature >= 50;
     const statusClass = isHot ? 'too-hot' : '';
     const iconClass = isHot ? 'bx bxs-fire' : 'bx bx-check-circle';
+    const tankName = tankLocations[tankId] ? tankLocations[tankId].name : `Tank ${tankId}`;
     
     // Update 21 Tank Overview
     const tankElement = document.querySelector(`#tank-overview li:nth-child(${tankId})`);
@@ -465,7 +635,7 @@ function updateTankDisplay(tankId, temperature) {
             <i class='${iconClass}'></i>
             <span class="text">
                 <h3>${temperature.toFixed(1)}°C</h3>
-                <p>Tank ${tankId}</p>
+                <p>${tankName}</p>
             </span>
         `;
     }
@@ -477,7 +647,7 @@ function updateTankDisplay(tankId, temperature) {
         const lastUpdate = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         tableRow.innerHTML = `
-            <td><strong>Tank ${tankId}</strong></td>
+            <td><strong>${tankName}</strong></td>
             <td><span class="${statusClass}">${temperature.toFixed(1)}°C</span></td>
             <td>
                 <span class="status-badge ${statusClass}">
@@ -506,6 +676,7 @@ function populateTankStatusTable(latestData) {
     const tableBody = document.getElementById('tank-status-table');
     if (!tableBody) return;
     
+    console.log("🔄 Populating tank status table...");
     tableBody.innerHTML = '';
     
     for (let tankId = 1; tankId <= 21; tankId++) {
@@ -514,10 +685,11 @@ function populateTankStatusTable(latestData) {
         const statusClass = temp ? getStatusClass(temp) : '';
         const statusText = temp ? getStatusText(temp) : 'No Data';
         const lastUpdate = tempData ? new Date(tempData.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--';
+        const tankName = tankLocations[tankId] ? tankLocations[tankId].name : `Tank ${tankId}`;
         
         tableBody.innerHTML += `
         <tr>
-            <td><strong>Tank ${tankId}</strong></td>
+            <td><strong>${tankName}</strong></td>
             <td><span class="${statusClass}">${temp ? temp.toFixed(1) + '°C' : '--'}</span></td>
             <td>
                 <span class="status-badge ${statusClass}">
@@ -528,6 +700,7 @@ function populateTankStatusTable(latestData) {
             <td>${lastUpdate}</td>
         </tr>`;
     }
+    console.log("✅ Tank status table populated");
 }
 
 function updateLatestRecordsTable() {
@@ -548,10 +721,11 @@ function updateLatestRecordsTable() {
         const statusText = isHot ? 'Too Hot' : 'Normal';
         const statusIcon = isHot ? 'bx bxs-fire' : 'bx bx-check-circle';
         const isLive = record.isLive || false;
+        const tankName = tankLocations[record.tank_id] ? tankLocations[record.tank_id].name : `Tank ${record.tank_id}`;
         
         tbody.innerHTML += `
         <tr>
-            <td><strong>Tank ${record.tank_id}</strong></td>
+            <td><strong>${tankName}</strong></td>
             <td class="${statusClass}"><strong>${record.temperature.toFixed(1)}°C</strong></td>
             <td>${new Date(record.created_at).toLocaleString()}</td>
             <td>
@@ -573,6 +747,7 @@ function addToLatestRecordsTable(newRecord, isLive = false) {
     const statusClass = isHot ? 'too-hot' : '';
     const statusText = isHot ? 'Too Hot' : 'Normal';
     const statusIcon = isHot ? 'bx bxs-fire' : 'bx bx-check-circle';
+    const tankName = tankLocations[newRecord.tank_id] ? tankLocations[newRecord.tank_id].name : `Tank ${newRecord.tank_id}`;
     
     if (isLive) {
         newRecord.isLive = true;
@@ -585,7 +760,7 @@ function addToLatestRecordsTable(newRecord, isLive = false) {
     
     const newRow = `
     <tr>
-        <td><strong>Tank ${newRecord.tank_id}</strong></td>
+        <td><strong>${tankName}</strong></td>
         <td class="${statusClass}"><strong>${newRecord.temperature.toFixed(1)}°C</strong></td>
         <td>${new Date(newRecord.created_at).toLocaleString()}</td>
         <td>
@@ -621,7 +796,7 @@ function addToLatestRecordsTable(newRecord, isLive = false) {
 
 // ==================== STATISTICS ====================
 function calculateStatistics(data) {
-    console.log(`Calculating statistics from ${data.length} records...`);
+    console.log(`📊 Calculating statistics from ${data.length} records...`);
     
     const stats = {
         totalReadings: data.length,
@@ -702,16 +877,25 @@ function calculateStatistics(data) {
             Math.round((stats.totalHotReadings / data.length) * 100) : 0;
     }
     
+    console.log("📊 Statistics calculated:", stats);
     return stats;
 }
 
 function updateMetrics(stats) {
+    console.log("🔄 Updating metrics...");
+    
     // Update average temperature
     document.getElementById('avg-temp').textContent = stats.avgTemp ? stats.avgTemp.toFixed(1) + '°C' : '--';
     document.getElementById('max-temp').textContent = stats.maxTemp !== -Infinity ? stats.maxTemp.toFixed(1) + '°C' : '--';
     document.getElementById('min-temp').textContent = stats.minTemp !== Infinity ? stats.minTemp.toFixed(1) + '°C' : '--';
-    document.getElementById('max-tank').textContent = stats.maxTank ? `Tank ${stats.maxTank}` : '--';
-    document.getElementById('min-tank').textContent = stats.minTank ? `Tank ${stats.minTank}` : '--';
+    
+    // Update tank names for max/min
+    const maxTankName = stats.maxTank ? (tankLocations[stats.maxTank] ? tankLocations[stats.maxTank].name : `Tank ${stats.maxTank}`) : '--';
+    const minTankName = stats.minTank ? (tankLocations[stats.minTank] ? tankLocations[stats.minTank].name : `Tank ${stats.minTank}`) : '--';
+    
+    document.getElementById('max-tank').textContent = maxTankName;
+    document.getElementById('min-tank').textContent = minTankName;
+    
     document.getElementById('normal-tanks').textContent = stats.normalTanks;
     document.getElementById('warning-tanks').textContent = stats.warningTanks;
     document.getElementById('last-update').textContent = stats.latestUpdate ? 
@@ -737,6 +921,7 @@ function updateMetrics(stats) {
     populateTempStatsTable(stats);
     
     updateTimestamp();
+    console.log("✅ Metrics updated");
 }
 
 function populateTempStatsTable(stats) {
@@ -773,26 +958,80 @@ function populateTempStatsTable(stats) {
 
 // ==================== MAP FUNCTIONS ====================
 function initMap() {
-    if (!document.getElementById('map')) return;
+    if (!document.getElementById('map')) {
+        console.log("⚠️ Map container not found");
+        return;
+    }
     
-    // Center on FIMA Bulking Services
+    console.log("🗺️ Initializing map...");
+    
+    // Center on FIMA Bulking Services, Tanjung Langsat
     const centerLat = 1.4575847;
     const centerLng = 103.9943574;
-    const zoomLevel = 18; // More zoomed in for detailed view
-    map.setView([centerLat, centerLng], zoomLevel);
     
-    map = L.map('map').setView([centerLat, centerLng], 17);
+    map = L.map('map').setView([centerLat, centerLng], 18);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
     }).addTo(map);
     
+    // Add facility marker
+    const facilityIcon = L.divIcon({
+        className: 'facility-marker',
+        html: `
+            <div style="
+                background-color: #3182ce;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                font-size: 14px;
+                cursor: pointer;
+            ">
+                FIMA
+            </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+    });
+    
+    const facilityMarker = L.marker([centerLat, centerLng], {
+        icon: facilityIcon,
+        title: 'FIMA Bulking Services - Tanjung Langsat'
+    }).addTo(map);
+    
+    facilityMarker.bindPopup(`
+        <div style="min-width: 250px; padding: 10px;">
+            <h3 style="margin: 0 0 10px 0; color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">
+                FIMA Bulking Services
+            </h3>
+            <p style="margin: 8px 0; color: #4a5568;">
+                <strong>Location:</strong> Tanjung Langsat Terminal
+            </p>
+            <p style="margin: 8px 0; color: #4a5568;">
+                <strong>Total Tanks:</strong> 21
+            </p>
+            <p style="margin: 8px 0; color: #4a5568;">
+                <strong>Status:</strong> Active
+            </p>
+        </div>
+    `);
+    
     updateMapMarkers();
+    console.log("✅ Map initialized");
 }
 
 function updateMapMarkers() {
     if (!map) return;
+    
+    console.log("🔄 Updating map markers...");
     
     tankMarkers.forEach(marker => map.removeLayer(marker));
     tankMarkers = [];
@@ -807,6 +1046,7 @@ function updateMapMarkers() {
         const temp = tempData ? tempData.temperature : null;
         const isHot = temp && temp >= 50;
         const markerColor = isHot ? '#e53e3e' : '#48bb78';
+        const tankName = location.name;
         
         const markerIcon = L.divIcon({
             className: 'custom-marker',
@@ -835,16 +1075,16 @@ function updateMapMarkers() {
         
         const marker = L.marker([location.lat, location.lng], {
             icon: markerIcon,
-            title: `Tank ${tankId}: ${temp ? temp.toFixed(1) + '°C' : 'No data'}`
+            title: `${tankName}: ${temp ? temp.toFixed(1) + '°C' : 'No data'}`
         }).addTo(map);
         
         const popupContent = `
-            <div style="min-width: 200px; padding: 10px;">
+            <div style="min-width: 250px; padding: 10px;">
                 <h3 style="margin: 0 0 10px 0; color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">
-                    Tank ${tankId}
+                    ${tankName}
                 </h3>
                 <p style="margin: 8px 0; color: #4a5568;">
-                    <strong>Location:</strong> ${location.name}
+                    <strong>Tank ID:</strong> ${tankId}
                 </p>
                 <p style="margin: 8px 0; color: #4a5568;">
                     <strong>Current Temp:</strong> 
@@ -855,7 +1095,7 @@ function updateMapMarkers() {
                 <p style="margin: 8px 0; color: #4a5568;">
                     <strong>Status:</strong> 
                     <span style="color: ${isHot ? '#e53e3e' : '#48bb78'}; font-weight: bold;">
-                        ${temp ? (isHot ? 'Too Hot' : 'Normal') : 'Unknown'}
+                        ${temp ? (isHot ? '⚠️ Too Hot' : '✅ Normal') : 'Unknown'}
                     </span>
                 </p>
                 ${tempData ? `
@@ -869,6 +1109,7 @@ function updateMapMarkers() {
         marker.bindPopup(popupContent);
         tankMarkers.push(marker);
     }
+    console.log("✅ Map markers updated");
 }
 
 function updateMapMarker(tankId, temperature) {
@@ -912,12 +1153,15 @@ function updateMapMarker(tankId, temperature) {
         marker.setIcon(newIcon);
         
         // Flash animation
-        marker.getElement().style.animation = 'pulse 1s ease';
-        setTimeout(() => {
-            if (marker.getElement()) {
-                marker.getElement().style.animation = '';
-            }
-        }, 1000);
+        const element = marker.getElement();
+        if (element) {
+            element.style.animation = 'pulse 1s ease';
+            setTimeout(() => {
+                if (element) {
+                    element.style.animation = '';
+                }
+            }, 1000);
+        }
     }
 }
 
@@ -1009,11 +1253,13 @@ function showLiveNotification(record) {
     const isHot = record.temperature >= 50;
     const notification = document.createElement('div');
     notification.className = `live-notification ${isHot ? 'hot' : 'normal'}`;
+    const tankName = tankLocations[record.tank_id] ? tankLocations[record.tank_id].name : `Tank ${record.tank_id}`;
+    
     notification.innerHTML = `
         <div class="live-notification-content">
             <i class='bx ${isHot ? 'bxs-fire' : 'bx-thermometer'}'></i>
             <div>
-                <strong>New Reading: Tank ${record.tank_id}</strong>
+                <strong>New Reading: ${tankName}</strong>
                 <p>${record.temperature.toFixed(1)}°C • ${isHot ? '🔥 Too Hot' : '✅ Normal'}</p>
             </div>
             <span class="live-time">just now</span>
@@ -1036,38 +1282,50 @@ function showLiveNotification(record) {
 
 // ==================== DASHBOARD FUNCTIONS ====================
 async function populateDashboard() {
-    console.log("Populating dashboard...");
+    console.log("🚀 Populating dashboard...");
     
     // Show initial loading
-    showNotification('Loading tank data...', 'info');
+    showNotification('Loading tank data from database...', 'info');
     
-    // Fetch data
-    const data = await fetchAllTankData();
-    const stats = calculateStatistics(data);
-    
-    // Get latest values
-    const latestValues = await fetchLatestTankValues();
-    window.latestTankData = latestValues;
-    
-    // Update metrics
-    updateMetrics(stats);
-    
-    // Update all displays
-    updateAllDisplays();
-    
-    // Update data stats modal
-    updateDataStats(stats);
-    
-    console.log("Dashboard populated successfully");
-    
-    // Setup realtime after initial load
-    if (!realtimeSubscription) {
-        setupRealtimeUpdates();
-    }
-    
-    // Start auto-refresh as fallback
-    if (!realtimeSubscription && !autoRefreshInterval) {
-        startAutoRefresh();
+    try {
+        // Fetch data
+        const data = await fetchAllTankData();
+        console.log(`📥 Fetched ${data.length} records`);
+        
+        const stats = calculateStatistics(data);
+        console.log("📊 Statistics calculated");
+        
+        // Get latest values
+        const latestValues = await fetchLatestTankValues();
+        window.latestTankData = latestValues;
+        console.log("📈 Latest values loaded");
+        
+        // Update metrics
+        updateMetrics(stats);
+        
+        // Update all displays
+        updateAllDisplays();
+        
+        // Update data stats modal
+        updateDataStats(stats);
+        
+        console.log("✅ Dashboard populated successfully");
+        
+        // Setup realtime after initial load
+        if (!realtimeSubscription) {
+            console.log("🔄 Setting up realtime updates...");
+            setTimeout(() => setupRealtimeUpdates(), 1000);
+        }
+        
+        // Start auto-refresh as fallback
+        if (!realtimeSubscription && !autoRefreshInterval) {
+            console.log("🔄 Starting auto-refresh as fallback...");
+            startAutoRefresh();
+        }
+        
+    } catch (error) {
+        console.error("❌ Error populating dashboard:", error);
+        showNotification('Error loading dashboard data', 'error');
     }
 }
 
@@ -1181,10 +1439,10 @@ function refreshMap() {
 
 function centerMap() {
     if (map) {
-        const centerLat = Object.values(tankLocations).reduce((sum, loc) => sum + loc.lat, 0) / 21;
-        const centerLng = Object.values(tankLocations).reduce((sum, loc) => sum + loc.lng, 0) / 21;
-        map.setView([centerLat, centerLng], 17);
-        showNotification('Map centered', 'info');
+        const centerLat = 1.4575847;
+        const centerLng = 103.9943574;
+        map.setView([centerLat, centerLng], 18);
+        showNotification('Map centered on facility', 'info');
     }
 }
 
@@ -1215,17 +1473,25 @@ function updateDataStats(stats) {
 // ==================== UTILITY FUNCTIONS ====================
 async function fetchLatestTankValues() {
     try {
-        if (!supabase) return {};
+        if (!supabase) {
+            console.log("⚠️ Supabase not available, generating mock latest values");
+            return generateMockLatestValues();
+        }
         
+        console.log("🔍 Fetching latest tank values...");
         const { data, error } = await supabase
             .from('tank_readings')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(1000);
         
-        if (error) throw error;
+        if (error) {
+            console.error("❌ Error fetching latest values:", error);
+            return generateMockLatestValues();
+        }
         
         const latestValues = {};
-        if (data) {
+        if (data && data.length > 0) {
             data.forEach(record => {
                 if (!latestValues[record.tank_id] || 
                     new Date(record.created_at) > new Date(latestValues[record.tank_id].created_at)) {
@@ -1236,13 +1502,29 @@ async function fetchLatestTankValues() {
                     };
                 }
             });
+            console.log(`✅ Latest values loaded for ${Object.keys(latestValues).length} tanks`);
+        } else {
+            console.log("⚠️ No data found, using mock values");
+            return generateMockLatestValues();
         }
         
         return latestValues;
     } catch (error) {
-        console.error("Error fetching latest tank values:", error);
-        return {};
+        console.error("❌ Exception fetching latest tank values:", error);
+        return generateMockLatestValues();
     }
+}
+
+function generateMockLatestValues() {
+    const mockValues = {};
+    for (let i = 1; i <= 21; i++) {
+        mockValues[i] = {
+            temperature: Math.random() * 30 + 20, // 20-50°C
+            created_at: new Date().toISOString(),
+            id: i
+        };
+    }
+    return mockValues;
 }
 
 function updateConnectionStatus(status) {
@@ -1306,7 +1588,7 @@ function getStatusIcon(temperature) {
 }
 
 function showNotification(message, type = 'info') {
-    console.log(`Notification [${type}]: ${message}`);
+    console.log(`📢 Notification [${type}]: ${message}`);
     
     // Create notification element
     const notification = document.createElement('div');
@@ -1342,7 +1624,7 @@ function showNotification(message, type = 'info') {
 }
 
 function generateMockData(count) {
-    console.log(`Generating ${count} mock records...`);
+    console.log(`🎲 Generating ${count} mock records...`);
     
     const mockData = [];
     const now = new Date();
@@ -1364,12 +1646,111 @@ function generateMockData(count) {
     // Sort by date descending
     mockData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     
+    console.log(`✅ Generated ${mockData.length} mock records`);
     return mockData;
+}
+
+// ==================== DEBUG FUNCTIONS ====================
+function setupDebugButton() {
+    // Add debug button to UI (only in development)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const debugBtn = document.createElement('button');
+        debugBtn.innerHTML = '<i class="bx bx-bug"></i> Debug';
+        debugBtn.style.position = 'fixed';
+        debugBtn.style.bottom = '20px';
+        debugBtn.style.right = '20px';
+        debugBtn.style.zIndex = '9999';
+        debugBtn.style.background = '#e53e3e';
+        debugBtn.style.color = 'white';
+        debugBtn.style.border = 'none';
+        debugBtn.style.padding = '10px 15px';
+        debugBtn.style.borderRadius = '5px';
+        debugBtn.style.cursor = 'pointer';
+        debugBtn.onclick = runDebugTests;
+        document.body.appendChild(debugBtn);
+    }
+}
+
+async function runDebugTests() {
+    console.clear();
+    console.log("=== 🐛 DEBUG TESTS ===");
+    
+    // Test 1: Supabase Connection
+    console.log("1. Testing Supabase connection...");
+    if (!supabase) {
+        console.error("❌ Supabase client is null");
+        return;
+    }
+    
+    // Test 2: Database Query
+    console.log("2. Testing database query...");
+    try {
+        const { data, error } = await supabase
+            .from('tank_readings')
+            .select('*')
+            .limit(5);
+        
+        if (error) {
+            console.error("❌ Database error:", error);
+            console.error("Error code:", error.code);
+            console.error("Error message:", error.message);
+            
+            if (error.code === '42501') {
+                console.error("⚠️ SOLUTION: Enable RLS policies in Supabase dashboard");
+                console.error("Go to: Authentication > Policies > Create policy for tank_readings");
+            }
+        } else {
+            console.log("✅ Database query successful");
+            console.log("Data sample:", data);
+            console.log("Number of records:", data.length);
+        }
+    } catch (err) {
+        console.error("❌ Exception:", err);
+    }
+    
+    // Test 3: Check global variables
+    console.log("3. Checking global variables...");
+    console.log("allTankData length:", allTankData.length);
+    console.log("latestTankData:", window.latestTankData ? "Exists" : "Null");
+    console.log("totalDatabaseCount:", totalDatabaseCount);
+    
+    // Test 4: Check if data is displaying
+    console.log("4. Checking UI elements...");
+    const tankOverview = document.getElementById('tank-overview');
+    console.log("tankOverview exists:", !!tankOverview);
+    
+    if (tankOverview) {
+        const items = tankOverview.querySelectorAll('li');
+        console.log("Number of tank items:", items.length);
+    }
 }
 
 // ==================== STYLE MANAGEMENT ====================
 function addCustomStyles() {
-    // Already included in CSS, no need to add dynamically
+    // Add additional styles for map markers
+    const style = document.createElement('style');
+    style.textContent = `
+        .facility-marker {
+            background: none !important;
+            border: none !important;
+        }
+        
+        .facility-marker div {
+            background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes highlight {
+            0% { background-color: rgba(56, 178, 172, 0.2); }
+            100% { background-color: transparent; }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // ==================== SIDEBAR TOGGLE ====================
@@ -1386,7 +1767,7 @@ function setupSidebarToggle() {
 
 // ==================== CHARTS PAGE ====================
 function initializeChartsPage() {
-    console.log("Initializing charts page...");
+    console.log("📈 Initializing charts page...");
     
     if (document.getElementById('chart')) {
         setTimeout(() => {
@@ -1403,7 +1784,8 @@ function initializeTankSelector() {
     
     tankSelect.innerHTML = '<option value="all">All Tanks</option>';
     for (let i = 1; i <= 21; i++) {
-        tankSelect.innerHTML += `<option value="${i}">Tank ${i}</option>`;
+        const tankName = tankLocations[i] ? tankLocations[i].name : `Tank ${i}`;
+        tankSelect.innerHTML += `<option value="${i}">${tankName}</option>`;
     }
     
     tankSelect.addEventListener('change', createTemperatureChart);
@@ -1415,10 +1797,11 @@ function initializeComparisonChart() {
     
     let html = '';
     for (let i = 1; i <= 21; i++) {
+        const tankName = tankLocations[i] ? tankLocations[i].name : `Tank ${i}`;
         html += `
             <label class="tank-checkbox">
                 <input type="checkbox" value="${i}" checked>
-                Tank ${i}
+                ${tankName}
             </label>
         `;
     }
@@ -1460,7 +1843,7 @@ function createTemperatureChart() {
         data: {
             labels: labels,
             datasets: [{
-                label: tankId === 'all' ? 'Temperature' : `Tank ${tankId} Temperature`,
+                label: tankId === 'all' ? 'Temperature (All Tanks)' : `${tankLocations[tankId] ? tankLocations[tankId].name : 'Tank ' + tankId} Temperature`,
                 data: data,
                 borderColor: '#4299e1',
                 backgroundColor: chartType === 'bar' ? colors : 'rgba(66, 153, 225, 0.1)',
@@ -1477,7 +1860,7 @@ function createTemperatureChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: `Temperature History ${tankId === 'all' ? '(All Tanks)' : `(Tank ${tankId})`}`,
+                    text: `Temperature History ${tankId === 'all' ? '(All Tanks)' : `(${tankLocations[tankId] ? tankLocations[tankId].name : 'Tank ' + tankId})`}`,
                     font: { size: 16 }
                 },
                 tooltip: {
@@ -1522,7 +1905,7 @@ function createComparisonChart() {
         return;
     }
     
-    const labels = selectedTanks.map(id => `Tank ${id}`);
+    const labels = selectedTanks.map(id => tankLocations[id] ? tankLocations[id].name : `Tank ${id}`);
     const data = selectedTanks.map(tankId => {
         const tankData = allTankData.filter(r => r.tank_id === tankId);
         if (tankData.length === 0) return 0;
@@ -1561,7 +1944,7 @@ function createComparisonChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Tank Comparison',
+                    text: 'Tank Comparison - FIMA Bulking Services',
                     font: { size: 16 }
                 }
             },
@@ -1654,7 +2037,7 @@ function exportData() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `tank-data-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `fima-tank-data-${new Date().toISOString().split('T')[0]}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1666,6 +2049,78 @@ function exportData() {
         showNotification('Export failed', 'error');
     }
 }
+
+// ==================== DEBUG & TEST FUNCTIONS ====================
+window.testSupabaseConnection = async function() {
+    console.log("=== 🔧 SUPABASE CONNECTION TEST ===");
+    
+    if (!supabase) {
+        console.error("❌ Supabase client is null");
+        return;
+    }
+    
+    try {
+        // Test 1: Simple query
+        console.log("1. Testing simple query...");
+        const { data, error } = await supabase
+            .from('tank_readings')
+            .select('*')
+            .limit(3);
+        
+        if (error) {
+            console.error("❌ Query failed:", error);
+            console.log("Error code:", error.code);
+            console.log("Error message:", error.message);
+            console.log("Error details:", error.details);
+            
+            if (error.code === '42501') {
+                console.log("\n⚠️ SOLUTION: Enable RLS policies in Supabase");
+                console.log("1. Go to Supabase Dashboard");
+                console.log("2. Click on your database");
+                console.log("3. Go to 'Authentication' > 'Policies'");
+                console.log("4. Click 'New Policy' for 'tank_readings' table");
+                console.log("5. Select 'For full customization'");
+                console.log("6. Name: 'Enable read access for all users'");
+                console.log("7. Using expression: true");
+                console.log("8. Save");
+            }
+            
+            if (error.code === '42P01') {
+                console.log("\n⚠️ SOLUTION: Create the table");
+                console.log("Run this SQL in Supabase SQL Editor:");
+                console.log(`
+                    CREATE TABLE tank_readings (
+                        id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                        tank_id INTEGER NOT NULL,
+                        temperature DECIMAL(5,2) NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    );
+                `);
+            }
+        } else {
+            console.log("✅ Query successful!");
+            console.log("Number of records:", data.length);
+            if (data.length > 0) {
+                console.log("Sample record:", data[0]);
+            }
+        }
+        
+        // Test 2: Count records
+        console.log("\n2. Testing record count...");
+        const { count, error: countError } = await supabase
+            .from('tank_readings')
+            .select('*', { count: 'exact', head: true });
+        
+        if (countError) {
+            console.error("❌ Count failed:", countError);
+        } else {
+            console.log("✅ Total records in database:", count);
+        }
+        
+    } catch (err) {
+        console.error("❌ Exception:", err);
+    }
+};
 
 // ==================== INITIALIZE ON LOAD ====================
 // Make functions globally available
@@ -1683,18 +2138,26 @@ window.refreshMap = refreshMap;
 window.centerMap = centerMap;
 window.showAllRecords = showAllRecords;
 window.changeRecordsLimit = changeRecordsLimit;
+window.runDebugTests = runDebugTests;
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("DOM fully loaded, initializing dashboard...");
+        console.log("📄 DOM fully loaded, initializing dashboard...");
         if (document.getElementById("tank-overview")) {
             populateDashboard();
         }
     });
 } else {
-    console.log("DOM already loaded, initializing dashboard...");
+    console.log("📄 DOM already loaded, initializing dashboard...");
     if (document.getElementById("tank-overview")) {
         populateDashboard();
     }
 }
+
+// Export for debugging
+console.log("🚀 Tank Monitoring Dashboard initialized");
+console.log("📍 Facility: FIMA Bulking Services, Tanjung Langsat");
+console.log("📡 Supabase URL:", SUPABASE_URL);
+console.log("🔑 API Key:", SUPABASE_ANON_KEY ? "Loaded" : "Missing");
+console.log("💡 Tip: Run 'testSupabaseConnection()' in console to debug connection issues");
