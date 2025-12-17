@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tank Temperature Charts</title>
-    <!-- Load Chart.js FIRST -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -64,57 +64,44 @@
                                 <option value="50" selected>Last 50 readings</option>
                                 <option value="100">Last 100 readings</option>
                                 <option value="200">Last 200 readings</option>
-                                <option value="500">Last 500 readings</option>
                             </select>
                         </div>
-                        <div class="control-group">
-                            <label for="chart-type"><i class='bx bx-bar-chart'></i> Chart Type:</label>
-                            <select id="chart-type">
-                                <option value="line" selected>Line Chart</option>
-                                <option value="bar">Bar Chart</option>
-                                <option value="scatter">Scatter Plot</option>
-                            </select>
-                        </div>
+                        <button id="load-chart" class="btn-load">
+                            <i class='bx bx-refresh'></i> Load Chart
+                        </button>
                     </div>
                 </div>
                 
-                <div class="chart-wrapper">
+                <!-- Loading State -->
+                <div id="loading-state" class="loading-state">
+                    <div class="spinner">
+                        <i class='bx bx-loader-circle bx-spin'></i>
+                    </div>
+                    <p>Loading temperature data...</p>
+                </div>
+                
+                <!-- Error State -->
+                <div id="error-state" class="error-state" style="display: none;">
+                    <div class="error-icon">
+                        <i class='bx bx-error-circle'></i>
+                    </div>
+                    <h3>Failed to Load Chart</h3>
+                    <p id="error-message">Could not connect to the database</p>
+                    <button id="retry-btn" class="btn-retry">
+                        <i class='bx bx-revision'></i> Try Again
+                    </button>
+                </div>
+                
+                <!-- Chart Canvas -->
+                <div id="chart-wrapper" class="chart-wrapper">
                     <canvas id="chart" height="400"></canvas>
                 </div>
                 
                 <div class="chart-info">
                     <div class="info-card">
                         <i class='bx bx-info-circle'></i>
-                        <p>This chart shows real-time temperature fluctuations for each tank. Select a tank from the dropdown to view its temperature history. Temperatures above 50°C are highlighted in red.</p>
+                        <p>This chart shows temperature readings for each tank. Select a tank and number of readings, then click "Load Chart". Temperatures above 50°C are highlighted in red.</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- MULTI TANK COMPARISON -->
-            <div class="chart-container">
-                <div class="chart-header">
-                    <h2><i class='bx bx-bar-chart-alt'></i> Multi-Tank Comparison</h2>
-                    <div class="chart-controls">
-                        <div class="control-group">
-                            <label for="tank-selection"><i class='bx bx-checkbox-checked'></i> Select Tanks:</label>
-                            <div class="tank-selection" id="tank-selection">
-                                <!-- Will be populated by JS -->
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label for="compare-type"><i class='bx bx-stats'></i> Compare:</label>
-                            <select id="compare-type">
-                                <option value="current">Current Temperatures</option>
-                                <option value="average">Average (Last 24h)</option>
-                                <option value="max">Maximum (Last 24h)</option>
-                                <option value="min">Minimum (Last 24h)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="chart-wrapper">
-                    <canvas id="comparison-chart" height="300"></canvas>
                 </div>
             </div>
 

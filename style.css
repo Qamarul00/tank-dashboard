@@ -1633,4 +1633,201 @@ td.too-hot strong, li.too-hot h3 {
         width: 95%;
         margin: 10px;
     }
+    /* Add these styles to your existing style.css */
+
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.chart-header {
+    margin-bottom: 20px;
+}
+
+.chart-header h2 {
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-header h2 i {
+    color: #4CAF50;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.control-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-weight: 500;
+}
+
+.control-group label i {
+    margin-right: 5px;
+    color: #4CAF50;
+}
+
+.control-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+}
+
+.btn-load {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+
+.btn-load:hover {
+    background: #45a049;
+}
+
+.btn-load i {
+    font-size: 18px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+}
+
+.spinner i {
+    font-size: 48px;
+    color: #4CAF50;
+    margin-bottom: 15px;
+}
+
+.loading-state p {
+    color: #666;
+    font-size: 16px;
+}
+
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    background: #fff5f5;
+    border-radius: 8px;
+    border: 1px solid #ffcdd2;
+}
+
+.error-icon i {
+    font-size: 48px;
+    color: #f44336;
+    margin-bottom: 15px;
+}
+
+.error-state h3 {
+    color: #c62828;
+    margin-bottom: 10px;
+}
+
+.error-state p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.btn-retry {
+    background: #2196F3;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.3s;
+}
+
+.btn-retry:hover {
+    background: #1976D2;
+}
+
+.chart-wrapper {
+    position: relative;
+    min-height: 400px;
+    margin-bottom: 20px;
+}
+
+.chart-info {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.info-card {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.info-card i {
+    color: #2196F3;
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+.info-card p {
+    color: #555;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chart-controls {
+        flex-direction: column;
+    }
+    
+    .control-group {
+        min-width: 100%;
+    }
+    
+    .btn-load {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 }
