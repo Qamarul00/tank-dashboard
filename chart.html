@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tank Temperature Charts</title>
+    <title>Tank Temperature Charts - FIMA Bulking Services</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="https://img.icons8.com/color/48/000000/temperature.png">
 </head>
 <body>
 
@@ -31,19 +32,30 @@
                 </a>
             </li>
         </ul>
+        <div class="sidebar-footer">
+            <span>Analysis Mode</span>
+        </div>
     </section>
 
     <!-- CONTENT -->
     <section id="content">
         <nav>
-            <i class='bx bx-menu'></i>
-            <span>Temperature Analysis Charts</span>
+            <i class='bx bx-menu' id="sidebar-toggle"></i>
+            <span class="nav-title">Temperature Analysis Charts</span>
+            <a href="index.html" class="back-btn">
+                <i class='bx bx-arrow-back'></i>
+                <span>Back to Dashboard</span>
+            </a>
         </nav>
 
         <main>
             <div class="head-title">
                 <div class="left">
                     <h1>Tank Temperature Analysis</h1>
+                    <p class="subtitle">Real-time and historical temperature visualization</p>
+                </div>
+                <div class="right">
+                    <span class="chart-time" id="chart-time">--:--:--</span>
                 </div>
             </div>
 
@@ -54,7 +66,7 @@
                         <div class="control-group">
                             <label for="tank"><i class='bx bx-thermometer'></i> Select Tank:</label>
                             <select id="tank">
-                                <option value="">Loading...</option>
+                                <option value="">Loading tanks...</option>
                             </select>
                         </div>
                         <div class="control-group">
@@ -64,6 +76,16 @@
                                 <option value="50" selected>Last 50 readings</option>
                                 <option value="100">Last 100 readings</option>
                                 <option value="200">Last 200 readings</option>
+                                <option value="500">Last 500 readings</option>
+                                <option value="1000">Last 1000 readings</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="chart-type"><i class='bx bx-bar-chart'></i> Chart Type:</label>
+                            <select id="chart-type">
+                                <option value="line">Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                                <option value="scatter">Scatter Plot</option>
                             </select>
                         </div>
                         <button id="load-chart" class="btn-load">
@@ -78,6 +100,7 @@
                         <i class='bx bx-loader-circle bx-spin'></i>
                     </div>
                     <p>Loading temperature data...</p>
+                    <p class="loading-sub">Fetching from database</p>
                 </div>
                 
                 <!-- Error State -->
@@ -94,13 +117,132 @@
                 
                 <!-- Chart Canvas -->
                 <div id="chart-wrapper" class="chart-wrapper">
+                    <div class="chart-toolbar">
+                        <div class="chart-info">
+                            <span id="chart-data-info">No data loaded</span>
+                            <span class="data-count" id="data-count">0 points</span>
+                        </div>
+                        <div class="chart-actions">
+                            <button class="chart-btn" id="export-chart">
+                                <i class='bx bx-download'></i> Export
+                            </button>
+                            <button class="chart-btn" id="toggle-grid">
+                                <i class='bx bx-grid'></i> Grid
+                            </button>
+                            <button class="chart-btn" id="reset-zoom">
+                                <i class='bx bx-zoom-out'></i> Reset Zoom
+                            </button>
+                        </div>
+                    </div>
                     <canvas id="chart" height="400"></canvas>
                 </div>
                 
-                <div class="chart-info">
-                    <div class="info-card">
-                        <i class='bx bx-info-circle'></i>
-                        <p>This chart shows temperature readings for each tank. Select a tank and number of readings, then click "Load Chart". Temperatures above 50°C are highlighted in red.</p>
+                <!-- Chart Statistics -->
+                <div class="chart-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class='bx bx-trending-up'></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Average Temp</h4>
+                            <div class="stat-value" id="stat-avg">--°C</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class='bx bx-up-arrow-alt'></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Max Temp</h4>
+                            <div class="stat-value" id="stat-max">--°C</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class='bx bx-down-arrow-alt'></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Min Temp</h4>
+                            <div class="stat-value" id="stat-min">--°C</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class='bx bx-line-chart'></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Std Deviation</h4>
+                            <div class="stat-value" id="stat-std">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Chart Controls -->
+                <div class="advanced-controls">
+                    <div class="control-group">
+                        <label><i class='bx bx-palette'></i> Color Scheme:</label>
+                        <select id="color-scheme">
+                            <option value="default">Default (Temp-based)</option>
+                            <option value="mono">Monochrome</option>
+                            <option value="gradient">Gradient</option>
+                            <option value="rainbow">Rainbow</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label><i class='bx bx-smooth'></i> Smoothing:</label>
+                        <input type="range" id="smoothing" min="0" max="1" step="0.1" value="0.4">
+                        <span id="smoothing-value">0.4</span>
+                    </div>
+                    <div class="control-group">
+                        <label><i class='bx bx-show'></i> Show Points:</label>
+                        <input type="checkbox" id="show-points" checked>
+                    </div>
+                    <button class="btn-secondary" id="auto-refresh">
+                        <i class='bx bx-refresh'></i>
+                        <span>Auto Refresh (30s)</span>
+                        <span class="toggle-switch">
+                            <span class="toggle-knob"></span>
+                        </span>
+                    </button>
+                </div>
+                
+                <!-- Data Export -->
+                <div class="data-export">
+                    <h3><i class='bx bx-export'></i> Export Data</h3>
+                    <div class="export-options">
+                        <button class="export-option" data-format="csv">
+                            <i class='bx bx-file'></i> CSV
+                        </button>
+                        <button class="export-option" data-format="json">
+                            <i class='bx bx-code'></i> JSON
+                        </button>
+                        <button class="export-option" data-format="png">
+                            <i class='bx bx-image'></i> PNG Image
+                        </button>
+                        <button class="export-option" data-format="pdf">
+                            <i class='bx bx-file-pdf'></i> PDF Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Charts Section -->
+            <div class="additional-charts">
+                <div class="section-header">
+                    <h3><i class='bx bx-bar-chart-alt'></i> Additional Visualizations</h3>
+                </div>
+                <div class="charts-grid">
+                    <div class="mini-chart">
+                        <h4>Temperature Distribution</h4>
+                        <canvas id="distribution-chart" height="200"></canvas>
+                    </div>
+                    <div class="mini-chart">
+                        <h4>Hourly Averages</h4>
+                        <canvas id="hourly-chart" height="200"></canvas>
+                    </div>
+                    <div class="mini-chart">
+                        <h4>Tank Comparison</h4>
+                        <canvas id="comparison-chart" height="200"></canvas>
                     </div>
                 </div>
             </div>
@@ -108,6 +250,7 @@
         </main>
     </section>
 
-    <script src="script.js"></script>
+    <!-- Scripts -->
+    <script src="chart-script.js"></script>
 </body>
 </html>

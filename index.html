@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tank Monitoring Dashboard - FIMA Bulking Services</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <!-- Leaflet CSS for OpenStreetMap -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Include Supabase client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="https://img.icons8.com/color/48/000000/temperature.png">
 </head>
 <body>
 
@@ -33,26 +31,33 @@
                 </a>
             </li>
         </ul>
+        <div class="sidebar-footer">
+            <div class="connection-status">
+                <div class="status-indicator" id="sidebar-status"></div>
+                <span>System Status</span>
+            </div>
+        </div>
     </section>
 
     <!-- CONTENT -->
     <section id="content">
         <nav>
-            <i class='bx bx-menu'></i>
-            <span>Monitor Status</span>
+            <i class='bx bx-menu' id="sidebar-toggle"></i>
+            <span class="nav-title">FIMA Tank Monitoring</span>
             <div class="nav-controls">
-                <button class="realtime-btn" onclick="toggleRealtime()" id="realtime-toggle">
+                <button class="realtime-btn" id="realtime-toggle">
                     <i class='bx bx-wifi'></i>
                     <span>Live Updates</span>
                 </button>
-                <button class="auto-refresh-btn" onclick="toggleAutoRefresh()" id="auto-refresh-toggle">
+                <button class="refresh-btn" id="manual-refresh">
                     <i class='bx bx-refresh'></i>
-                    <span>Auto Refresh</span>
+                    <span>Refresh</span>
                 </button>
             </div>
         </nav>
 
         <main>
+            <!-- HEADER -->
             <div class="head-title">
                 <div class="left">
                     <h1>FIMA Bulking Services Tank Monitoring</h1>
@@ -61,18 +66,13 @@
                         <span>Connecting...</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- DATA LOADING PROGRESS -->
-            <div class="load-progress" id="load-progress" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 0%"></div>
+                <div class="right">
+                    <span class="current-time" id="current-time">--:--:--</span>
                 </div>
-                <span>Loading data...</span>
             </div>
 
             <!-- REAL-TIME ALERT -->
-            <div class="realtime-alert" id="realtime-alert">
+            <div class="realtime-alert" id="realtime-alert" style="display: none;">
                 <i class='bx bx-bell-ring'></i>
                 <span>Live updates enabled. New data will appear automatically.</span>
                 <button class="alert-close" onclick="closeRealtimeAlert()">
@@ -80,107 +80,103 @@
                 </button>
             </div>
 
+            <!-- LOCATION INFO -->
             <div class="location-info">
                 <i class='bx bx-map'></i>
                 <span>Tanjung Langsat Terminal</span>
+                <span class="site-id">Site ID: TLT-2024</span>
             </div>
-
-            <!-- DATASET WARNING (Dynamically added) -->
-            <div id="dataset-warning-container"></div>
 
             <!-- TANK STATUS OVERVIEW -->
             <div class="monitor-status">
                 <div class="status-card">
                     <div class="status-header">
                         <h3 id="avg-temp">--</h3>
-                        <span class="status-time" id="last-update">--</span>
+                        <span class="status-unit">°C</span>
                     </div>
                     <div class="status-content">
-                        <h4>Average Temperature</h4>
+                        <h4><i class='bx bx-trending-up'></i> Average Temperature</h4>
                         <p>All 21 Tanks</p>
+                        <div class="trend-indicator" id="avg-trend">
+                            <i class='bx bx-minus'></i>
+                            <span>Stable</span>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="status-card">
                     <div class="status-header">
                         <h3 id="max-temp">--</h3>
-                        <span class="status-time">°C</span>
+                        <span class="status-unit">°C</span>
                     </div>
                     <div class="status-content">
-                        <h4>Highest Temp</h4>
-                        <p id="max-tank">--</p>
+                        <h4><i class='bx bx-up-arrow-alt'></i> Highest Temp</h4>
+                        <p id="max-tank">Tank --</p>
+                        <div class="time-ago" id="max-time">--</div>
                     </div>
                 </div>
                 
                 <div class="status-card">
                     <div class="status-header">
                         <h3 id="min-temp">--</h3>
-                        <span class="status-time">°C</span>
+                        <span class="status-unit">°C</span>
                     </div>
                     <div class="status-content">
-                        <h4>Lowest Temp</h4>
-                        <p id="min-tank">--</p>
+                        <h4><i class='bx bx-down-arrow-alt'></i> Lowest Temp</h4>
+                        <p id="min-tank">Tank --</p>
+                        <div class="time-ago" id="min-time">--</div>
                     </div>
                 </div>
                 
-                <div class="status-card">
+                <div class="status-card status-normal">
                     <div class="status-header">
                         <h3 id="normal-tanks">--</h3>
+                        <span class="status-icon"><i class='bx bx-check-circle'></i></span>
                     </div>
                     <div class="status-content">
-                        <h4>Tanks in Range</h4>
-                        <p>Below 50°C Normal</p>
+                        <h4><i class='bx bx-check-shield'></i> Normal Tanks</h4>
+                        <p>Below 50°C</p>
+                        <div class="status-percentage" id="normal-percent">--%</div>
                     </div>
                 </div>
                 
-                <div class="status-card">
+                <div class="status-card status-warning">
                     <div class="status-header">
                         <h3 id="warning-tanks">--</h3>
-                        <span class="status-time warning">!</span>
+                        <span class="status-icon warning"><i class='bx bx-error-circle'></i></span>
                     </div>
                     <div class="status-content">
-                        <h4>Too Hot Tanks</h4>
+                        <h4><i class='bx bx-alarm-exclamation'></i> Hot Tanks</h4>
                         <p>Above 50°C</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TANK LOCATIONS -->
-            <div class="location-status">
-                <div class="location-header">
-                    <h3>Tank Locations Status →</h3>
-                    <div class="location-controls">
-                        <button class="master-btn" onclick="refreshData()">
-                            <i class='bx bx-refresh'></i> Manual Refresh
-                        </button>
-                        <button class="data-stats-btn" onclick="showDataStats()">
-                            <i class='bx bx-stats'></i> Data Stats
-                        </button>
-                        <button class="load-more-btn" onclick="loadMoreData()" id="load-more-btn">
-                            <i class='bx bx-cloud-download'></i> Load More
-                        </button>
+                        <div class="status-percentage warning" id="warning-percent">--%</div>
                     </div>
                 </div>
             </div>
 
             <!-- SYSTEM SUMMARY -->
             <div class="summary-section">
-                <div class="summary-header">
-                    <h3>System Summary</h3>
+                <div class="section-header">
+                    <h3><i class='bx bx-stats'></i> System Summary</h3>
                     <span class="update-badge" id="update-badge">
                         <i class='bx bx-time'></i> Updated just now
                     </span>
                 </div>
                 <div class="summary-content">
                     <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class='bx bx-data'></i>
+                        </div>
                         <div class="summary-value" id="total-readings">0</div>
                         <div class="summary-details">
                             <h4>Total Readings</h4>
-                            <p>Data Collected</p>
-                            <span class="data-timestamp" id="data-timestamp">--</span>
+                            <p>Data Points Collected</p>
+                            <span class="data-timestamp" id="data-timestamp">First: -- | Last: --</span>
                         </div>
                     </div>
                     <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class='bx bx-thermometer'></i>
+                        </div>
                         <div class="summary-value" id="active-tanks">21</div>
                         <div class="summary-details">
                             <h4>Active Tanks</h4>
@@ -191,10 +187,25 @@
                         </div>
                     </div>
                     <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class='bx bx-trending-down'></i>
+                        </div>
                         <div class="summary-value" id="temp-stability">--</div>
                         <div class="summary-details">
                             <h4>Temp Stability</h4>
                             <p>Standard Deviation</p>
+                            <span class="stability-level" id="stability-level">--</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class='bx bx-line-chart'></i>
+                        </div>
+                        <div class="summary-value" id="update-rate">0/min</div>
+                        <div class="summary-details">
+                            <h4>Update Rate</h4>
+                            <p>Data Refresh Frequency</p>
+                            <span class="rate-status" id="rate-status">Idle</span>
                         </div>
                     </div>
                 </div>
@@ -205,11 +216,14 @@
                 <div class="section-header">
                     <h3><i class='bx bx-map'></i> Tank Locations Map</h3>
                     <div class="map-controls">
-                        <button class="map-toggle" onclick="refreshMap()">
+                        <button class="map-btn" id="refresh-map">
                             <i class='bx bx-refresh'></i> Refresh Map
                         </button>
-                        <button class="map-center" onclick="centerMap()">
-                            <i class='bx bx-target-lock'></i> Center Map
+                        <button class="map-btn" id="center-map">
+                            <i class='bx bx-target-lock'></i> Center
+                        </button>
+                        <button class="map-btn" id="toggle-markers">
+                            <i class='bx bx-show'></i> Show All
                         </button>
                     </div>
                 </div>
@@ -222,16 +236,26 @@
                             <span>Normal (< 50°C)</span>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-color hot"></span>
-                            <span>Too Hot (≥ 50°C)</span>
+                            <span class="legend-color warning"></span>
+                            <span>Warning (50-60°C)</span>
                         </div>
                         <div class="legend-item">
-                            <span><i class='bx bx-info-circle info-icon'></i></span>
+                            <span class="legend-color danger"></span>
+                            <span>Critical (> 60°C)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-info"><i class='bx bx-info-circle'></i></span>
                             <span>Click markers for details</span>
                         </div>
-                        <div class="legend-item">
-                            <span><i class='bx bx-wifi connection-icon'></i></span>
-                            <span id="map-connection-status">Live updates</span>
+                        <div class="map-stats">
+                            <div class="stat">
+                                <span>Markers:</span>
+                                <span id="marker-count">0</span>
+                            </div>
+                            <div class="stat">
+                                <span>Zoom:</span>
+                                <span id="map-zoom">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -241,174 +265,229 @@
             <div class="table-section">
                 <div class="data-table">
                     <div class="table-header">
-                        <h3>Tank Current Status</h3>
-                        <span class="table-update" id="table-update">
-                            <i class='bx bx-time-five'></i> Live
-                        </span>
+                        <h3><i class='bx bx-table'></i> Tank Current Status</h3>
+                        <div class="table-controls">
+                            <div class="search-box">
+                                <i class='bx bx-search'></i>
+                                <input type="text" id="table-search" placeholder="Search tanks...">
+                            </div>
+                            <button class="table-btn" id="sort-temp">
+                                <i class='bx bx-sort'></i> Sort by Temp
+                            </button>
+                        </div>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Tank ID</th>
-                                <th>Temperature</th>
-                                <th>Status</th>
-                                <th>Last Update</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tank-status-table">
-                            <tr><td colspan="4" style="text-align: center; color: #718096;">Loading live data...</td></tr>
-                        </tbody>
-                    </table>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tank ID</th>
+                                    <th>Temperature</th>
+                                    <th>Status</th>
+                                    <th>Last Update</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tank-status-table">
+                                <tr>
+                                    <td colspan="5" class="loading-cell">
+                                        <i class='bx bx-loader-circle bx-spin'></i>
+                                        <span>Loading live data...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 
                 <div class="data-table">
                     <div class="table-header">
-                        <h3>Temperature Statistics</h3>
+                        <h3><i class='bx bx-stats'></i> Temperature Statistics</h3>
+                        <span class="stats-update" id="stats-update">Live</span>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Value</th>
-                                <th>Unit</th>
-                            </tr>
-                        </thead>
-                        <tbody id="temp-stats-table">
-                            <tr><td colspan="3" style="text-align: center; color: #718096;">Loading statistics...</td></tr>
-                        </tbody>
-                    </table>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Unit</th>
+                                    <th>Trend</th>
+                                </tr>
+                            </thead>
+                            <tbody id="temp-stats-table">
+                                <tr>
+                                    <td colspan="4" class="loading-cell">
+                                        <i class='bx bx-loader-circle bx-spin'></i>
+                                        <span>Loading statistics...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- 21 TANK OVERVIEW -->
+            <!-- TANK OVERVIEW CARDS -->
             <div class="tank-overview-section">
                 <div class="section-header">
                     <h3><i class='bx bx-thermometer'></i> 21 Tank Temperature Overview</h3>
-                    <span class="overview-update" id="overview-update">
-                        <i class='bx bx-check-circle'></i> Updated
-                    </span>
-                </div>
-                <ul class="box-info" id="tank-overview">
-                    <li style="grid-column: 1 / -1; text-align: center; color: #718096;">
-                        <i class='bx bx-loader bx-spin'></i>
-                        <span class="text">
-                            <h3>Loading live data...</h3>
-                            <p>Establishing real-time connection</p>
+                    <div class="overview-controls">
+                        <div class="view-toggle">
+                            <button class="view-btn active" data-view="grid"><i class='bx bx-grid'></i> Grid</button>
+                            <button class="view-btn" data-view="list"><i class='bx bx-list-ul'></i> List</button>
+                        </div>
+                        <span class="overview-update" id="overview-update">
+                            <i class='bx bx-check-circle'></i> Updated
                         </span>
-                    </li>
-                </ul>
-            </div>
-
-            <!-- LATEST RECORDS TABLE -->
-            <div class="table-data">
-                <div class="order">
-                    <div class="head">
-                        <h3><i class='bx bx-history'></i> Latest Temperature Records</h3>
-                        <div class="table-controls">
-                            <button class="show-all-btn" onclick="showAllRecords()">
-                                <i class='bx bx-list-check'></i> Show All
-                            </button>
-                            <select class="records-limit" onchange="changeRecordsLimit(this)">
-                                <option value="15">15 records</option>
-                                <option value="30">30 records</option>
-                                <option value="50">50 records</option>
-                                <option value="100">100 records</option>
-                            </select>
+                    </div>
+                </div>
+                <div class="tank-grid" id="tank-grid-view">
+                    <!-- Tank cards will be dynamically inserted here -->
+                    <div class="tank-card loading">
+                        <div class="tank-card-header">
+                            <div class="tank-skeleton"></div>
+                        </div>
+                        <div class="tank-card-content">
+                            <div class="temp-skeleton"></div>
+                            <div class="status-skeleton"></div>
                         </div>
                     </div>
+                    <!-- Repeat 21 times -->
+                </div>
+            </div>
+
+            <!-- LATEST RECORDS -->
+            <div class="latest-records">
+                <div class="section-header">
+                    <h3><i class='bx bx-history'></i> Latest Temperature Records</h3>
+                    <div class="records-controls">
+                        <select class="records-limit" id="records-limit">
+                            <option value="10">10 records</option>
+                            <option value="20" selected>20 records</option>
+                            <option value="30">30 records</option>
+                            <option value="50">50 records</option>
+                        </select>
+                        <button class="export-btn" id="export-data">
+                            <i class='bx bx-export'></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
                     <table>
                         <thead>
                             <tr>
+                                <th>ID</th>
                                 <th>Tank</th>
                                 <th>Temperature</th>
                                 <th>Date Time</th>
                                 <th>Status</th>
-                                <th>Live</th>
+                                <th>Alert</th>
                             </tr>
                         </thead>
-                        <tbody id="tank-table">
-                            <tr><td colspan="5" style="text-align: center; color: #718096;">Waiting for live updates...</td></tr>
+                        <tbody id="latest-records-table">
+                            <tr>
+                                <td colspan="6" class="loading-cell">
+                                    <i class='bx bx-loader-circle bx-spin'></i>
+                                    <span>Waiting for live updates...</span>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="table-footer">
+                    <div class="pagination">
+                        <button class="page-btn" disabled id="prev-page">
+                            <i class='bx bx-chevron-left'></i> Previous
+                        </button>
+                        <span class="page-info">Page <span id="current-page">1</span> of <span id="total-pages">1</span></span>
+                        <button class="page-btn" id="next-page">
+                            Next <i class='bx bx-chevron-right'></i>
+                        </button>
+                    </div>
+                    <div class="records-info">
+                        Showing <span id="showing-count">0</span> of <span id="total-records">0</span> records
+                    </div>
                 </div>
             </div>
 
         </main>
     </section>
 
-    <!-- Data Stats Modal -->
-    <div class="modal-overlay" id="data-stats-modal">
+    <!-- MODAL FOR TANK DETAILS -->
+    <div class="modal-overlay" id="tank-modal" style="display: none;">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class='bx bx-stats'></i> Data Statistics</h3>
-                <button class="modal-close" onclick="closeDataStats()">
+                <h3><i class='bx bx-thermometer'></i> Tank Details</h3>
+                <button class="modal-close" onclick="closeModal()">
                     <i class='bx bx-x'></i>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="modal-total-records">0</div>
-                        <div class="stat-label">Total Records</div>
+                <div class="tank-details">
+                    <div class="detail-header">
+                        <div class="tank-identifier">
+                            <h2 id="modal-tank-id">Tank --</h2>
+                            <span class="tank-status-badge" id="modal-tank-status">--</span>
+                        </div>
+                        <div class="tank-temp-large">
+                            <span id="modal-tank-temp">--</span>
+                            <span class="unit">°C</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="modal-avg-temp">--</div>
-                        <div class="stat-label">Avg Temperature</div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <i class='bx bx-calendar'></i>
+                            <div>
+                                <label>Last Updated</label>
+                                <span id="modal-last-update">--</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class='bx bx-trending-up'></i>
+                            <div>
+                                <label>24h Trend</label>
+                                <span id="modal-24h-trend">--</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class='bx bx-history'></i>
+                            <div>
+                                <label>Update Count</label>
+                                <span id="modal-update-count">--</span>
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <i class='bx bx-map-pin'></i>
+                            <div>
+                                <label>Location</label>
+                                <span id="modal-location">--</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="modal-temp-stability">--</div>
-                        <div class="stat-label">Temp Stability</div>
+                    
+                    <div class="detail-chart">
+                        <h4>Temperature History (24h)</h4>
+                        <canvas id="tank-detail-chart"></canvas>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="modal-update-rate">0/min</div>
-                        <div class="stat-label">Update Rate</div>
-                    </div>
-                </div>
-                <div class="stats-details">
-                    <h4>Connection Details</h4>
-                    <div class="detail-item">
-                        <span>Realtime Status:</span>
-                        <span id="modal-realtime-status" class="status-connected">Connected</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Last Update:</span>
-                        <span id="modal-last-update">--</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Data Source:</span>
-                        <span id="modal-data-source">Supabase</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Displayed Records:</span>
-                        <span id="modal-displayed-records">0</span>
+                    
+                    <div class="modal-actions">
+                        <button class="modal-btn primary" onclick="viewTankHistory()">
+                            <i class='bx bx-line-chart'></i> View Full History
+                        </button>
+                        <button class="modal-btn secondary" onclick="closeModal()">
+                            <i class='bx bx-x'></i> Close
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Analysis Modal -->
-    <div class="modal-overlay" id="analysis-modal">
-        <div class="modal analysis-modal">
-            <div class="modal-header">
-                <h3><i class='bx bx-analyse'></i> Dataset Analysis</h3>
-                <button class="modal-close" onclick="closeAnalysisModal()">
-                    <i class='bx bx-x'></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="analysis-content">
-                    <div class="analysis-loading">
-                        <i class='bx bx-loader bx-spin'></i>
-                        <p>Analyzing dataset...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Leaflet JS for OpenStreetMap -->
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
 </body>
 </html>

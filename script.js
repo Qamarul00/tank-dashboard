@@ -5,348 +5,881 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Chart variables
-let temperatureChart = null;
+// Global variables
+let realtimeEnabled = true;
+let map = null;
+let markers = [];
+let currentData = [];
+let autoRefreshInterval = null;
+let tankDetailChart = null;
 
 // DOM Elements
-const tankSelect = document.getElementById('tank');
-const timeRangeSelect = document.getElementById('time-range');
-const loadChartBtn = document.getElementById('load-chart');
-const retryBtn = document.getElementById('retry-btn');
-const loadingState = document.getElementById('loading-state');
-const errorState = document.getElementById('error-state');
-const chartWrapper = document.getElementById('chart-wrapper');
-
-// Initialize the page
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('Initializing temperature chart page...');
+const elements = {
+    // Status elements
+    avgTemp: document.getElementById('avg-temp'),
+    maxTemp: document.getElementById('max-temp'),
+    minTemp: document.getElementById('min-temp'),
+    maxTank: document.getElementById('max-tank'),
+    minTank: document.getElementById('min-tank'),
+    normalTanks: document.getElementById('normal-tanks'),
+    warningTanks: document.getElementById('warning-tanks'),
     
-    try {
-        // Load tank list
-        await loadTanks();
-        
-        // Setup event listeners
-        setupEventListeners();
-        
-        // Hide loading state initially
-        loadingState.style.display = 'none';
-        
-        console.log('Page initialized successfully');
-        
-    } catch (error) {
-        console.error('Failed to initialize page:', error);
-        showError('Failed to initialize: ' + error.message);
+    // Summary elements
+    totalReadings: document.getElementById('total-readings'),
+    tempStability: document.getElementById('temp-stability'),
+    updateRate: document.getElementById('update-rate'),
+    dataTimestamp: document.getElementById('data-timestamp'),
+    
+    // Connection status
+    connectionStatus: document.getElementById('connection-status'),
+    sidebarStatus: document.getElementById('sidebar-status'),
+    
+    // Time elements
+    currentTime: document.getElementById('current-time'),
+    lastUpdate: document.getElementById('last-update'),
+    
+    // Alert elements
+    realtimeAlert: document.getElementById('realtime-alert'),
+    
+    // Map elements
+    mapZoom: document.getElementById('map-zoom'),
+    markerCount: document.getElementById('marker-count'),
+    
+    // Table elements
+    tankStatusTable: document.getElementById('tank-status-table'),
+    tempStatsTable: document.getElementById('temp-stats-table'),
+    latestRecordsTable: document.getElementById('latest-records-table'),
+    
+    // Tank grid
+    tankGridView: document.getElementById('tank-grid-view'),
+    
+    // Modal elements
+    tankModal: document.getElementById('tank-modal'),
+    
+    // Control elements
+    realtimeToggle: document.getElementById('realtime-toggle'),
+    manualRefresh: document.getElementById('manual-refresh'),
+    sidebarToggle: document.getElementById('sidebar-toggle')
+};
+
+// Initialize application
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Initializing Tank Monitoring Dashboard...');
+    
+    // Update current time
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 1000);
+    
+    // Initialize event listeners
+    initializeEventListeners();
+    
+    // Initialize map
+    initializeMap();
+    
+    // Load initial data
+    await loadInitialData();
+    
+    // Start real-time updates if enabled
+    if (realtimeEnabled) {
+        startRealtimeUpdates();
+        showRealtimeAlert();
     }
+    
+    console.log('Dashboard initialized successfully');
 });
 
-// Load tanks list
-async function loadTanks() {
+// Update current time
+function updateCurrentTime() {
+    const now = new Date();
+    elements.currentTime.textContent = now.toLocaleTimeString();
+}
+
+// Initialize event listeners
+function initializeEventListeners() {
+    // Sidebar toggle
+    if (elements.sidebarToggle) {
+        elements.sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+    
+    // Realtime toggle
+    if (elements.realtimeToggle) {
+        elements.realtimeToggle.addEventListener('click', toggleRealtime);
+    }
+    
+    // Manual refresh
+    if (elements.manualRefresh) {
+        elements.manualRefresh.addEventListener('click', loadInitialData);
+    }
+    
+    // Map controls
+    document.getElementById('refresh-map')?.addEventListener('click', refreshMapData);
+    document.getElementById('center-map')?.addEventListener('click', centerMap);
+    document.getElementById('toggle-markers')?.addEventListener('click', toggleAllMarkers);
+    
+    // Table search
+    document.getElementById('table-search')?.addEventListener('input', filterTable);
+    document.getElementById('sort-temp')?.addEventListener('click', sortTableByTemp);
+    
+    // Modal close
+    document.querySelector('.modal-close')?.addEventListener('click', closeModal);
+    
+    // View toggle
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            toggleView(this.dataset.view);
+        });
+    });
+    
+    // Export data
+    document.getElementById('export-data')?.addEventListener('click', exportData);
+}
+
+// Toggle sidebar
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
+}
+
+// Toggle realtime updates
+function toggleRealtime() {
+    realtimeEnabled = !realtimeEnabled;
+    const btn = elements.realtimeToggle;
+    
+    if (realtimeEnabled) {
+        btn.innerHTML = '<i class="bx bx-wifi"></i><span>Live Updates</span>';
+        btn.classList.add('active');
+        startRealtimeUpdates();
+        showRealtimeAlert();
+        updateConnectionStatus('Connected', 'success');
+    } else {
+        btn.innerHTML = '<i class="bx bx-wifi-off"></i><span>Live Updates</span>';
+        btn.classList.remove('active');
+        stopRealtimeUpdates();
+        updateConnectionStatus('Manual Mode', 'warning');
+    }
+}
+
+// Initialize Leaflet map
+function initializeMap() {
+    if (!document.getElementById('map')) return;
+    
+    // Center on Tanjung Langsat Terminal
+    map = L.map('map').setView([1.4600, 104.0300], 14);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Update zoom display
+    map.on('zoomend', function() {
+        if (elements.mapZoom) {
+            elements.mapZoom.textContent = map.getZoom();
+        }
+    });
+}
+
+// Load initial data
+async function loadInitialData() {
     try {
-        const { data: tanks, error } = await supabase
+        updateConnectionStatus('Loading data...', 'loading');
+        
+        // Load tank data
+        const tankData = await loadTankData();
+        
+        // Load temperature readings
+        const readings = await loadTemperatureReadings();
+        
+        // Process and display data
+        processAndDisplayData(tankData, readings);
+        
+        // Update connection status
+        updateConnectionStatus('Connected', 'success');
+        
+        console.log('Data loaded successfully:', {
+            tanks: tankData.length,
+            readings: readings.length
+        });
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        updateConnectionStatus('Connection Error', 'error');
+        showError('Failed to load data: ' + error.message);
+    }
+}
+
+// Load tank data
+async function loadTankData() {
+    const { data, error } = await supabase
+        .from('tanks')
+        .select('*')
+        .order('tank_number');
+    
+    if (error) throw error;
+    return data || [];
+}
+
+// Load temperature readings
+async function loadTemperatureReadings() {
+    const { data, error } = await supabase
+        .from('temperature_readings')
+        .select('*, tanks(tank_number, name)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+    
+    if (error) throw error;
+    return data || [];
+}
+
+// Process and display data
+function processAndDisplayData(tanks, readings) {
+    currentData = readings;
+    
+    // Update summary statistics
+    updateSummaryStats(tanks, readings);
+    
+    // Update tank status table
+    updateTankStatusTable(tanks, readings);
+    
+    // Update temperature statistics
+    updateTempStats(readings);
+    
+    // Update latest records
+    updateLatestRecords(readings);
+    
+    // Update tank overview cards
+    updateTankOverview(tanks, readings);
+    
+    // Update map markers
+    updateMapMarkers(tanks, readings);
+    
+    // Update timestamp
+    updateLastUpdate();
+}
+
+// Update summary statistics
+function updateSummaryStats(tanks, readings) {
+    if (readings.length === 0) return;
+    
+    // Calculate average temperature
+    const avgTemp = readings.reduce((sum, r) => sum + r.temperature, 0) / readings.length;
+    elements.avgTemp.textContent = avgTemp.toFixed(1);
+    
+    // Find max and min temperatures
+    const maxReading = readings.reduce((max, r) => r.temperature > max.temperature ? r : max);
+    const minReading = readings.reduce((min, r) => r.temperature < min.temperature ? r : min);
+    
+    elements.maxTemp.textContent = maxReading.temperature.toFixed(1);
+    elements.minTemp.textContent = minReading.temperature.toFixed(1);
+    elements.maxTank.textContent = `Tank ${maxReading.tanks.tank_number}`;
+    elements.minTank.textContent = `Tank ${minReading.tanks.tank_number}`;
+    
+    // Count normal and warning tanks
+    const tankTemps = {};
+    readings.forEach(r => {
+        if (!tankTemps[r.tank_id] || new Date(r.created_at) > new Date(tankTemps[r.tank_id].created_at)) {
+            tankTemps[r.tank_id] = r;
+        }
+    });
+    
+    const tankStatuses = Object.values(tankTemps);
+    const normalCount = tankStatuses.filter(t => t.temperature < 50).length;
+    const warningCount = tankStatuses.filter(t => t.temperature >= 50).length;
+    
+    elements.normalTanks.textContent = normalCount;
+    elements.warningTanks.textContent = warningCount;
+    
+    // Update total readings
+    elements.totalReadings.textContent = readings.length;
+    
+    // Calculate temperature stability (standard deviation)
+    const variance = readings.reduce((sum, r) => sum + Math.pow(r.temperature - avgTemp, 2), 0) / readings.length;
+    const stdDev = Math.sqrt(variance);
+    elements.tempStability.textContent = stdDev.toFixed(2);
+    
+    // Update timestamp
+    const firstReading = readings[readings.length - 1];
+    const lastReading = readings[0];
+    elements.dataTimestamp.textContent = 
+        `First: ${formatDate(firstReading.created_at)} | Last: ${formatDate(lastReading.created_at)}`;
+}
+
+// Update tank status table
+function updateTankStatusTable(tanks, readings) {
+    const tableBody = elements.tankStatusTable;
+    if (!tableBody) return;
+    
+    // Group latest readings by tank
+    const latestByTank = {};
+    readings.forEach(r => {
+        if (!latestByTank[r.tank_id] || new Date(r.created_at) > new Date(latestByTank[r.tank_id].created_at)) {
+            latestByTank[r.tank_id] = r;
+        }
+    });
+    
+    tableBody.innerHTML = '';
+    
+    tanks.forEach(tank => {
+        const reading = latestByTank[tank.id];
+        if (!reading) return;
+        
+        const row = document.createElement('tr');
+        const status = reading.temperature >= 50 ? 'warning' : 'normal';
+        const statusText = reading.temperature >= 50 ? 'Too Hot' : 'Normal';
+        const statusClass = reading.temperature >= 50 ? 'status-warning' : 'status-normal';
+        
+        row.innerHTML = `
+            <td><strong>Tank ${tank.tank_number}</strong>${tank.name ? `<br><small>${tank.name}</small>` : ''}</td>
+            <td>
+                <div class="temp-display ${statusClass}">
+                    ${reading.temperature.toFixed(1)}°C
+                </div>
+            </td>
+            <td>
+                <span class="status-badge ${statusClass}">
+                    <i class='bx ${status === 'warning' ? 'bx-error-circle' : 'bx-check-circle'}'></i>
+                    ${statusText}
+                </span>
+            </td>
+            <td>${formatTimeAgo(reading.created_at)}</td>
+            <td>
+                <button class="action-btn" onclick="showTankDetails(${tank.id})">
+                    <i class='bx bx-show'></i>
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// Update temperature statistics table
+function updateTempStats(readings) {
+    const tableBody = elements.tempStatsTable;
+    if (!tableBody || readings.length === 0) return;
+    
+    const temps = readings.map(r => r.temperature);
+    const avg = temps.reduce((a, b) => a + b, 0) / temps.length;
+    const max = Math.max(...temps);
+    const min = Math.min(...temps);
+    const variance = temps.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / temps.length;
+    const stdDev = Math.sqrt(variance);
+    
+    const stats = [
+        { metric: 'Average Temperature', value: avg.toFixed(1), unit: '°C', trend: 'stable' },
+        { metric: 'Maximum Temperature', value: max.toFixed(1), unit: '°C', trend: 'up' },
+        { metric: 'Minimum Temperature', value: min.toFixed(1), unit: '°C', trend: 'down' },
+        { metric: 'Temperature Range', value: (max - min).toFixed(1), unit: '°C', trend: 'neutral' },
+        { metric: 'Standard Deviation', value: stdDev.toFixed(2), unit: 'σ', trend: 'stable' },
+        { metric: 'Sample Size', value: readings.length, unit: 'readings', trend: 'neutral' }
+    ];
+    
+    tableBody.innerHTML = '';
+    
+    stats.forEach(stat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${stat.metric}</td>
+            <td><strong>${stat.value}</strong></td>
+            <td>${stat.unit}</td>
+            <td>
+                <i class='bx bx-trending-${stat.trend}'></i>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Update latest records table
+function updateLatestRecords(readings) {
+    const tableBody = elements.latestRecordsTable;
+    if (!tableBody) return;
+    
+    const limit = parseInt(document.getElementById('records-limit')?.value || 20);
+    const displayReadings = readings.slice(0, limit);
+    
+    tableBody.innerHTML = '';
+    
+    displayReadings.forEach(reading => {
+        const status = reading.temperature >= 50 ? 'warning' : 'normal';
+        const statusText = reading.temperature >= 50 ? 'Too Hot' : 'Normal';
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${reading.id}</td>
+            <td>Tank ${reading.tanks.tank_number}</td>
+            <td>
+                <span class="temp-badge ${status}">
+                    ${reading.temperature.toFixed(1)}°C
+                </span>
+            </td>
+            <td>${formatDateTime(reading.created_at)}</td>
+            <td>
+                <span class="status-indicator ${status}">
+                    ${statusText}
+                </span>
+            </td>
+            <td>
+                ${reading.temperature >= 50 ? 
+                    '<i class="bx bx-alarm" style="color: #f72585;"></i>' : 
+                    '<i class="bx bx-check" style="color: #4cc9f0;"></i>'
+                }
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Update tank overview cards
+function updateTankOverview(tanks, readings) {
+    const grid = elements.tankGridView;
+    if (!grid) return;
+    
+    // Group latest readings by tank
+    const latestByTank = {};
+    readings.forEach(r => {
+        if (!latestByTank[r.tank_id] || new Date(r.created_at) > new Date(latestByTank[r.tank_id].created_at)) {
+            latestByTank[r.tank_id] = r;
+        }
+    });
+    
+    grid.innerHTML = '';
+    
+    tanks.forEach(tank => {
+        const reading = latestByTank[tank.id];
+        if (!reading) return;
+        
+        const status = reading.temperature >= 50 ? 'warning' : 'normal';
+        const statusColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
+        
+        const card = document.createElement('div');
+        card.className = 'tank-card';
+        card.onclick = () => showTankDetails(tank.id);
+        
+        card.innerHTML = `
+            <div class="tank-card-header">
+                <h4>Tank ${tank.tank_number}</h4>
+                <div class="temp-circle" style="border-color: ${statusColor}">
+                    ${reading.temperature.toFixed(1)}°C
+                </div>
+            </div>
+            <div class="tank-card-content">
+                <p class="tank-name">${tank.name || 'No name'}</p>
+                <div class="tank-status">
+                    <span class="status-dot" style="background: ${statusColor}"></span>
+                    <span>${status === 'warning' ? 'Too Hot' : 'Normal'}</span>
+                </div>
+                <p class="tank-update">Updated ${formatTimeAgo(reading.created_at)}</p>
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+// Update map markers
+function updateMapMarkers(tanks, readings) {
+    if (!map) return;
+    
+    // Clear existing markers
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+    
+    // Group latest readings by tank
+    const latestByTank = {};
+    readings.forEach(r => {
+        if (!latestByTank[r.tank_id] || new Date(r.created_at) > new Date(latestByTank[r.tank_id].created_at)) {
+            latestByTank[r.tank_id] = r;
+        }
+    });
+    
+    // Add markers for each tank
+    tanks.forEach(tank => {
+        const reading = latestByTank[tank.id];
+        if (!reading) return;
+        
+        // Generate random coordinates around Tanjung Langsat (for demo)
+        const lat = 1.4600 + (Math.random() - 0.5) * 0.01;
+        const lng = 104.0300 + (Math.random() - 0.5) * 0.01;
+        
+        const status = reading.temperature >= 50 ? 'warning' : 'normal';
+        const iconColor = reading.temperature >= 50 ? '#f72585' : '#4cc9f0';
+        
+        // Create custom icon
+        const icon = L.divIcon({
+            html: `
+                <div class="map-marker" style="border-color: ${iconColor}">
+                    <div class="marker-temperature">${reading.temperature.toFixed(1)}°C</div>
+                    <div class="marker-label">Tank ${tank.tank_number}</div>
+                </div>
+            `,
+            className: 'custom-marker',
+            iconSize: [60, 60],
+            iconAnchor: [30, 60]
+        });
+        
+        const marker = L.marker([lat, lng], { icon })
+            .addTo(map)
+            .bindPopup(`
+                <div class="map-popup">
+                    <h3>Tank ${tank.tank_number}</h3>
+                    <p><strong>Temperature:</strong> ${reading.temperature.toFixed(1)}°C</p>
+                    <p><strong>Status:</strong> ${status === 'warning' ? '⚠️ Too Hot' : '✅ Normal'}</p>
+                    <p><strong>Last Update:</strong> ${formatDateTime(reading.created_at)}</p>
+                    <button onclick="showTankDetails(${tank.id})" class="popup-btn">
+                        View Details
+                    </button>
+                </div>
+            `);
+        
+        markers.push(marker);
+    });
+    
+    // Update marker count
+    if (elements.markerCount) {
+        elements.markerCount.textContent = markers.length;
+    }
+}
+
+// Show tank details modal
+async function showTankDetails(tankId) {
+    try {
+        // Fetch tank details
+        const { data: tank, error: tankError } = await supabase
             .from('tanks')
-            .select('id, tank_number, name')
-            .order('tank_number');
+            .select('*')
+            .eq('id', tankId)
+            .single();
         
-        if (error) throw error;
+        if (tankError) throw tankError;
         
-        // Clear existing options
-        tankSelect.innerHTML = '<option value="">All Tanks</option>';
-        
-        // Add tank options
-        tanks.forEach(tank => {
-            const option = document.createElement('option');
-            option.value = tank.id;
-            option.textContent = `Tank ${tank.tank_number}${tank.name ? ' - ' + tank.name : ''}`;
-            tankSelect.appendChild(option);
-        });
-        
-        console.log('Loaded tanks:', tanks.length);
-        
-    } catch (error) {
-        console.error('Error loading tanks:', error);
-        tankSelect.innerHTML = '<option value="">Error loading tanks</option>';
-    }
-}
-
-// Setup event listeners
-function setupEventListeners() {
-    // Load chart button
-    loadChartBtn.addEventListener('click', loadChartData);
-    
-    // Retry button
-    retryBtn.addEventListener('click', loadChartData);
-    
-    // Enter key on selects
-    tankSelect.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') loadChartData();
-    });
-    
-    timeRangeSelect.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') loadChartData();
-    });
-}
-
-// Load chart data
-async function loadChartData() {
-    showLoading();
-    hideError();
-    
-    try {
-        // Get selected values
-        const selectedTankId = tankSelect.value;
-        const limit = parseInt(timeRangeSelect.value) || 50;
-        
-        // Build query
-        let query = supabase
+        // Fetch temperature history
+        const { data: history, error: historyError } = await supabase
             .from('temperature_readings')
-            .select('temperature, created_at, tank_id, tanks(tank_number, name)')
+            .select('*')
+            .eq('tank_id', tankId)
             .order('created_at', { ascending: false })
-            .limit(limit);
+            .limit(50);
         
-        // Filter by tank if selected
-        if (selectedTankId) {
-            query = query.eq('tank_id', selectedTankId);
+        if (historyError) throw historyError;
+        
+        // Update modal content
+        document.getElementById('modal-tank-id').textContent = `Tank ${tank.tank_number}`;
+        document.getElementById('modal-tank-status').textContent = 
+            history[0]?.temperature >= 50 ? 'Too Hot' : 'Normal';
+        document.getElementById('modal-tank-temp').textContent = 
+            history[0]?.temperature?.toFixed(1) || '--';
+        document.getElementById('modal-last-update').textContent = 
+            history[0] ? formatDateTime(history[0].created_at) : '--';
+        document.getElementById('modal-update-count').textContent = history.length;
+        
+        // Show modal
+        elements.tankModal.style.display = 'flex';
+        
+        // Create chart if history exists
+        if (history.length > 0) {
+            createTankDetailChart(history.reverse());
         }
-        
-        const { data: readings, error } = await query;
-        
-        if (error) throw error;
-        
-        // Reverse to show chronological order (oldest to newest)
-        readings.reverse();
-        
-        if (!readings || readings.length === 0) {
-            showNoData();
-            return;
-        }
-        
-        // Process data for chart
-        const chartData = processChartData(readings);
-        
-        // Create or update chart
-        updateChart(chartData);
-        
-        hideLoading();
-        showChart();
-        
-        console.log('Chart loaded successfully with', readings.length, 'readings');
         
     } catch (error) {
-        console.error('Error loading chart data:', error);
-        showError('Failed to load temperature data: ' + error.message);
+        console.error('Error loading tank details:', error);
+        alert('Failed to load tank details: ' + error.message);
     }
 }
 
-// Process data for Chart.js
-function processChartData(readings) {
-    const labels = [];
-    const temperatures = [];
-    const backgroundColors = [];
-    const borderColors = [];
+// Create tank detail chart
+function createTankDetailChart(history) {
+    const ctx = document.getElementById('tank-detail-chart').getContext('2d');
     
-    readings.forEach(reading => {
-        const date = new Date(reading.created_at);
-        
-        // Format time label
-        const timeLabel = date.toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        
-        const dateLabel = date.toLocaleDateString();
-        const label = `${dateLabel} ${timeLabel}`;
-        
-        labels.push(label);
-        temperatures.push(reading.temperature);
-        
-        // Color coding based on temperature
-        const temp = reading.temperature;
-        if (temp > 50) {
-            // High temperature - red
-            backgroundColors.push('rgba(255, 99, 132, 0.2)');
-            borderColors.push('rgba(255, 99, 132, 1)');
-        } else if (temp > 40) {
-            // Medium temperature - orange
-            backgroundColors.push('rgba(255, 159, 64, 0.2)');
-            borderColors.push('rgba(255, 159, 64, 1)');
-        } else {
-            // Normal temperature - blue
-            backgroundColors.push('rgba(54, 162, 235, 0.2)');
-            borderColors.push('rgba(54, 162, 235, 1)');
-        }
-    });
-    
-    const tankNumber = readings[0]?.tanks?.tank_number || 'Multiple';
-    const tankName = readings[0]?.tanks?.name || '';
-    const tankLabel = tankSelect.value ? `Tank ${tankNumber}${tankName ? ' - ' + tankName : ''}` : 'All Tanks';
-    
-    return {
-        labels: labels,
-        datasets: [{
-            label: `${tankLabel} Temperature (°C)`,
-            data: temperatures,
-            backgroundColor: backgroundColors,
-            borderColor: borderColors,
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: borderColors,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6
-        }]
-    };
-}
-
-// Create or update chart
-function updateChart(chartData) {
-    const ctx = document.getElementById('chart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (temperatureChart) {
-        temperatureChart.destroy();
+    // Destroy existing chart
+    if (tankDetailChart) {
+        tankDetailChart.destroy();
     }
     
-    // Create new chart
-    temperatureChart = new Chart(ctx, {
+    const labels = history.map(h => formatTime(h.created_at));
+    const temperatures = history.map(h => h.temperature);
+    
+    tankDetailChart = new Chart(ctx, {
         type: 'line',
-        data: chartData,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Temperature (°C)',
+                data: temperatures,
+                borderColor: '#4361ee',
+                backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        font: {
-                            size: 14
-                        }
-                    }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `Temperature: ${context.parsed.y}°C`;
-                        },
-                        title: function(tooltipItems) {
-                            return tooltipItems[0].label;
-                        }
-                    }
-                }
+                legend: { display: false }
             },
             scales: {
                 y: {
-                    beginAtZero: true,
+                    beginAtZero: false,
                     title: {
                         display: true,
-                        text: 'Temperature (°C)',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        }
+                        text: 'Temperature (°C)'
                     }
                 },
                 x: {
                     title: {
                         display: true,
-                        text: 'Time',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        },
-                        maxTicksLimit: 10,
-                        maxRotation: 45,
-                        minRotation: 45
+                        text: 'Time'
                     }
                 }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'nearest'
-            },
-            animation: {
-                duration: 1000,
-                easing: 'easeOutQuart'
             }
         }
     });
 }
 
-// Show loading state
-function showLoading() {
-    loadingState.style.display = 'flex';
-    chartWrapper.style.display = 'none';
-    errorState.style.display = 'none';
+// Close modal
+function closeModal() {
+    elements.tankModal.style.display = 'none';
+    if (tankDetailChart) {
+        tankDetailChart.destroy();
+        tankDetailChart = null;
+    }
 }
 
-// Hide loading state
-function hideLoading() {
-    loadingState.style.display = 'none';
+// Start realtime updates
+function startRealtimeUpdates() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    autoRefreshInterval = setInterval(loadInitialData, 30000); // 30 seconds
+    
+    // Subscribe to database changes
+    const channel = supabase
+        .channel('temperature-changes')
+        .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'temperature_readings' },
+            () => loadInitialData()
+        )
+        .subscribe();
 }
 
-// Show chart
-function showChart() {
-    chartWrapper.style.display = 'block';
+// Stop realtime updates
+function stopRealtimeUpdates() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
 }
 
-// Show error state
+// Show realtime alert
+function showRealtimeAlert() {
+    if (elements.realtimeAlert) {
+        elements.realtimeAlert.style.display = 'flex';
+        setTimeout(() => {
+            elements.realtimeAlert.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Close realtime alert
+function closeRealtimeAlert() {
+    if (elements.realtimeAlert) {
+        elements.realtimeAlert.style.display = 'none';
+    }
+}
+
+// Update connection status
+function updateConnectionStatus(message, type) {
+    const statusElement = elements.connectionStatus;
+    const sidebarStatus = elements.sidebarStatus;
+    
+    if (!statusElement) return;
+    
+    statusElement.innerHTML = `
+        <i class='bx bx-wifi${type === 'success' ? '' : type === 'error' ? '-off' : ''}'></i>
+        <span>${message}</span>
+    `;
+    
+    // Update status indicator color
+    let color = '#f8961e'; // warning (loading)
+    if (type === 'success') color = '#4cc9f0'; // success
+    if (type === 'error') color = '#f72585'; // error
+    
+    statusElement.style.color = color;
+    
+    if (sidebarStatus) {
+        sidebarStatus.style.background = color;
+    }
+}
+
+// Update last update timestamp
+function updateLastUpdate() {
+    if (elements.lastUpdate) {
+        elements.lastUpdate.textContent = 'Just now';
+    }
+}
+
+// Refresh map data
+function refreshMapData() {
+    if (map && currentData.length > 0) {
+        // Re-fetch tank data and update map
+        loadTankData().then(tanks => {
+            updateMapMarkers(tanks, currentData);
+        });
+    }
+}
+
+// Center map
+function centerMap() {
+    if (map) {
+        map.setView([1.4600, 104.0300], 14);
+    }
+}
+
+// Toggle all markers
+function toggleAllMarkers() {
+    const btn = document.getElementById('toggle-markers');
+    const isVisible = markers[0]?.isPopupOpen() || false;
+    
+    markers.forEach(marker => {
+        if (isVisible) {
+            marker.closePopup();
+        } else {
+            marker.openPopup();
+        }
+    });
+    
+    btn.innerHTML = isVisible ? 
+        '<i class="bx bx-show"></i> Show All' : 
+        '<i class="bx bx-hide"></i> Hide All';
+}
+
+// Filter table
+function filterTable(event) {
+    const searchTerm = event.target.value.toLowerCase();
+    const rows = elements.tankStatusTable.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+// Sort table by temperature
+function sortTableByTemp() {
+    const tbody = elements.tankStatusTable;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const tempA = parseFloat(a.querySelector('.temp-display').textContent);
+        const tempB = parseFloat(b.querySelector('.temp-display').textContent);
+        return tempB - tempA; // Descending order
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Toggle view mode
+function toggleView(view) {
+    const grid = document.getElementById('tank-grid-view');
+    const buttons = document.querySelectorAll('.view-btn');
+    
+    buttons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+    
+    if (view === 'list') {
+        grid.style.gridTemplateColumns = '1fr';
+        grid.classList.add('list-view');
+    } else {
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
+        grid.classList.remove('list-view');
+    }
+}
+
+// Export data
+function exportData() {
+    if (currentData.length === 0) {
+        alert('No data to export');
+        return;
+    }
+    
+    const csvContent = [
+        ['Tank', 'Temperature (°C)', 'Date Time', 'Status'].join(','),
+        ...currentData.map(r => [
+            `Tank ${r.tanks.tank_number}`,
+            r.temperature,
+            r.created_at,
+            r.temperature >= 50 ? 'Too Hot' : 'Normal'
+        ].join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tank-temperatures-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Format date time
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+}
+
+// Format time
+function formatTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// Format time ago
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+}
+
+// Show error
 function showError(message) {
-    loadingState.style.display = 'none';
-    chartWrapper.style.display = 'none';
-    errorState.style.display = 'flex';
-    document.getElementById('error-message').textContent = message;
+    alert('Error: ' + message);
 }
 
-// Hide error state
-function hideError() {
-    errorState.style.display = 'none';
-}
+// Global functions for HTML onclick
+window.toggleRealtime = toggleRealtime;
+window.closeRealtimeAlert = closeRealtimeAlert;
+window.showTankDetails = showTankDetails;
+window.closeModal = closeModal;
+window.refreshMapData = refreshMapData;
+window.centerMap = centerMap;
+window.toggleAllMarkers = toggleAllMarkers;
+window.filterTable = filterTable;
+window.sortTableByTemp = sortTableByTemp;
+window.toggleView = toggleView;
+window.exportData = exportData;
 
-// Show "no data" message
-function showNoData() {
-    hideLoading();
-    showError('No temperature data available for the selected tank and time range.');
-}
-
-// Test Supabase connection (optional, can be called from console)
-window.testSupabaseConnection = async function() {
+// Test connection
+window.testConnection = async function() {
     try {
         console.log('Testing Supabase connection...');
-        
-        const { data, error } = await supabase
-            .from('temperature_readings')
-            .select('count')
-            .limit(1);
-        
+        const { data, error } = await supabase.from('temperature_readings').select('count').limit(1);
         if (error) throw error;
-        
-        console.log('✓ Supabase connection successful');
-        console.log('Data sample:', data);
-        
+        console.log('✓ Connection successful');
         return true;
     } catch (error) {
-        console.error('✗ Supabase connection failed:', error);
+        console.error('✗ Connection failed:', error);
         return false;
     }
 };
