@@ -1,6 +1,5 @@
-// Supabase Configuration chart-script.js
-const supabase = window.supabaseClient;
-
+// Temperature Chart Script
+// Uses centralized Supabase configuration
 
 // Chart variables
 let temperatureChart = null;
@@ -218,8 +217,13 @@ async function loadChartData() {
         const selectedTankId = elements.tankSelect ? elements.tankSelect.value : '';
         const limit = elements.timeRangeSelect ? parseInt(elements.timeRangeSelect.value) || 50 : 50;
         
+        // Use centralized Supabase client
+        if (!window.supabaseClient) {
+            throw new Error('Supabase client not initialized');
+        }
+        
         // Build query for tank_readings table
-        let query = supabase
+        let query = supabaseClient
             .from('tank_readings')
             .select('*')
             .order('created_at', { ascending: false })
@@ -1011,18 +1015,16 @@ window.toggleChartGrid = toggleChartGrid;
 window.resetChartZoom = resetChartZoom;
 window.exportChartData = exportChartData;
 
-// Test connection
+// Test connection using centralized config
 window.testChartConnection = async function() {
     try {
         console.log('Testing Supabase connection...');
-        const { data, error } = await supabase.from('tank_readings').select('count').limit(1);
-        if (error) throw error;
-        console.log('✓ Connection successful');
-        return true;
+        if (window.supabaseConfig) {
+            return await window.supabaseConfig.testConnection();
+        }
+        return false;
     } catch (error) {
-        console.error('✗ Connection failed:', error);
+        console.error('Connection test failed:', error);
         return false;
     }
 };
-
-//end

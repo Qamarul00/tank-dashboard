@@ -1,4 +1,5 @@
-const supabase = window.supabaseClient;
+// Tank Monitoring Dashboard - Main Script
+// Uses centralized Supabase configuration
 
 // Global variables
 let realtimeEnabled = true;
@@ -200,7 +201,7 @@ async function loadInitialData() {
         // Generate tank data
         const tankData = generateTankData();
         
-        // Load temperature readings
+        // Load temperature readings using centralized config
         const readings = await loadTemperatureReadings();
         
         // Process and display data
@@ -224,7 +225,12 @@ async function loadInitialData() {
 // Load temperature readings from tank_readings table
 async function loadTemperatureReadings() {
     try {
-        const { data, error } = await supabase
+        // Use centralized Supabase client
+        if (!window.supabaseClient) {
+            throw new Error('Supabase client not initialized');
+        }
+        
+        const { data, error } = await supabaseClient
             .from('tank_readings')
             .select('*')
             .order('created_at', { ascending: false })
@@ -661,8 +667,13 @@ async function showTankDetails(tankId) {
             name: `Tank ${tankId}`
         };
         
+        // Use centralized Supabase client
+        if (!window.supabaseClient) {
+            throw new Error('Supabase client not available');
+        }
+        
         // Fetch temperature history for this tank
-        const { data: history, error } = await supabase
+        const { data: history, error } = await supabaseClient
             .from('tank_readings')
             .select('*')
             .eq('tank_id', tankId)
@@ -782,14 +793,16 @@ function startRealtimeUpdates() {
     
     autoRefreshInterval = setInterval(loadInitialData, 30000); // 30 seconds
     
-    // Subscribe to database changes
-    const channel = supabase
-        .channel('temperature-changes')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'tank_readings' },
-            () => loadInitialData()
-        )
-        .subscribe();
+    // Subscribe to database changes using centralized client
+    if (window.supabaseClient) {
+        const channel = supabaseClient
+            .channel('temperature-changes')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'tank_readings' },
+                () => loadInitialData()
+            )
+            .subscribe();
+    }
 }
 
 // Stop realtime updates
@@ -997,18 +1010,16 @@ window.sortTableByTemp = sortTableByTemp;
 window.toggleView = toggleView;
 window.exportData = exportData;
 
-// Test connection
+// Test connection using centralized config
 window.testConnection = async function() {
     try {
         console.log('Testing Supabase connection...');
-        const { data, error } = await supabase.from('tank_readings').select('count').limit(1);
-        if (error) throw error;
-        console.log('✓ Connection successful');
-        return true;
+        if (window.supabaseConfig) {
+            return await window.supabaseConfig.testConnection();
+        }
+        return false;
     } catch (error) {
-        console.error('✗ Connection failed:', error);
+        console.error('Connection test failed:', error);
         return false;
     }
 };
-
-//end
