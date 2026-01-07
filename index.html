@@ -77,11 +77,11 @@
         }
 
         .sidebar-title {
-        font-size: 20px; /* Kurangkan sikit dari 20px supaya muat */
+        font-size: 20px; 
         font-weight: 700;
         color: #111827;
         letter-spacing: -0.5px;
-        white-space: nowrap; /* <--- INI PENTING: Paksa teks jadi satu baris */
+        white-space: nowrap; 
         }
 
         .sidebar-subtitle {
@@ -237,16 +237,15 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(1, 1fr); /* 1 Column for vertical stacking */
+            grid-template-columns: repeat(1, 1fr); 
             gap: 10px;
         }
 
-        /* MODIFIED: Side-by-side layout for Summary Item */
         .summary-item {
             display: flex;
-            flex-direction: row; /* Horizontal layout */
-            align-items: center; /* Vertical center */
-            justify-content: space-between; /* Space between text and number */
+            flex-direction: row; 
+            align-items: center; 
+            justify-content: space-between; 
             gap: 12px;
             margin-bottom: 8px;
         }
@@ -255,7 +254,7 @@
             font-size: 12px;
             color: #6b7280;
             font-weight: 500;
-            flex: 1; /* Allow text to take space */
+            flex: 1; 
             line-height: 1.3;
         }
 
@@ -700,7 +699,122 @@
             margin-top: 4px;
         }
 
-        /* MODAL STYLES */
+        /* ===== CHATBOT STYLES ===== */
+        .chatbot-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001; /* Ensure above overlay */
+        }
+
+        .chatbot-btn {
+            width: 60px;
+            height: 60px;
+            background: #4f46e5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .chatbot-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .chatbot-window {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chatbot-header {
+            background: #4f46e5;
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f9fafb;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .user-msg {
+            background: #4f46e5;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-msg {
+            background: white;
+            color: #1f2937;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chatbot-input {
+            padding: 15px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+            background: white;
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px 12px;
+            outline: none;
+        }
+
+        .chatbot-input button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* MODAL STYLES (Kept for compatibility) */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -769,552 +883,6 @@
             background: #f3f4f6;
             color: #111827;
         }
-
-        .tank-detail-content { padding: 0; }
-
-        .detail-header {
-            padding: 24px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-bottom: 1px solid #e5e7eb;
-            text-align: center;
-        }
-
-        .tank-identifier h2 {
-            font-size: 24px;
-            font-weight: 700;
-            color: #111827;
-            margin: 0;
-        }
-
-        .tank-status-badge-large {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-
-        .tank-temp-large {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .tank-temp-large span {
-            font-size: 48px;
-            font-weight: 800;
-            color: #111827;
-            line-height: 1;
-        }
-
-        .tank-temp-large .unit {
-            font-size: 24px;
-            color: #6b7280;
-            margin-left: 4px;
-        }
-
-        .temp-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 12px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .temp-indicator i { font-size: 20px; }
-        .temp-indicator.up { color: #ef4444; }
-        .temp-indicator.down { color: #10b981; }
-        .temp-indicator.stable { color: #6b7280; }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            padding: 24px;
-        }
-
-        .detail-grid-item {
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .detail-grid-item i {
-            font-size: 20px;
-            color: #4f46e5;
-            margin-bottom: 4px;
-        }
-
-        .detail-grid-item label {
-            font-size: 12px;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .detail-grid-item span {
-            font-size: 16px;
-            font-weight: 600;
-            color: #111827;
-        }
-
-        /* Date Range Section */
-        .date-range-section {
-            padding: 24px;
-            border-bottom: 1px solid #e5e7eb;
-            background: #f9fafb;
-        }
-
-        .date-range-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #111827;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .date-selector-simple {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .date-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .date-label {
-            font-size: 14px;
-            color: #6b7280;
-            font-weight: 500;
-            min-width: 120px;
-        }
-
-        .date-input-group {
-            flex: 1;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .date-input {
-            flex: 1;
-            padding: 10px 14px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            color: #111827;
-            background: white;
-            min-width: 130px;
-        }
-
-        .date-btn {
-            padding: 10px 20px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            color: #6b7280;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        .date-btn:hover, .date-btn.active {
-            background: #4f46e5;
-            color: white;
-            border-color: #4f46e5;
-        }
-
-        .quick-select-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .quick-select-btn {
-            padding: 8px 16px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            color: #6b7280;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .quick-select-btn:hover { background: #f9fafb; }
-        .quick-select-btn.active { background: #4f46e5; color: white; border-color: #4f46e5; }
-
-        .selected-date-display {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #0369a1;
-        }
-
-        .selected-date-display i { font-size: 18px; color: #0ea5e9; }
-        .selected-date-text strong { color: #111827; }
-
-        /* Chart Controls */
-        .chart-controls {
-            padding: 16px 24px;
-            border-bottom: 1px solid #e5e7eb;
-            background: #f9fafb;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .chart-control-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .chart-control-select {
-            padding: 8px 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            background: white;
-            color: #111827;
-            font-size: 13px;
-            min-width: 120px;
-        }
-
-        .data-info {
-            padding: 16px 24px;
-            background: #f8fafc;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-            color: #6b7280;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 300px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .chart-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 300px;
-            color: #94a3b8;
-            text-align: center;
-        }
-
-        .chart-loading i { font-size: 40px; margin-bottom: 16px; }
-
-        /* Temperature Values */
-        .temperature-values {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8fafc;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .temperature-value-item { text-align: center; }
-        .temperature-value-label {
-            font-size: 11px;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-        }
-        .temperature-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .modal-actions {
-            padding: 24px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            gap: 12px;
-            background: #f9fafb;
-            border-radius: 0 0 16px 16px;
-        }
-
-        .modal-btn {
-            flex: 1;
-            padding: 14px 20px;
-            border-radius: 10px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .modal-btn.primary { background: #4f46e5; color: white; }
-        .modal-btn.primary:hover { background: #4338ca; }
-        .modal-btn.secondary { background: white; color: #4b5563; border: 1px solid #e5e7eb; }
-        .modal-btn.secondary:hover { background: #f9fafb; border-color: #d1d5db; }
-
-        /* Position Editor Styles */
-        .position-editor {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 99999;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .position-editor-content {
-            background: white;
-            width: 90%;
-            max-width: 800px;
-            height: 80%;
-            border-radius: 12px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .position-editor-header {
-            padding: 20px 24px;
-            background: #4f46e5;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .position-editor-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
-
-        .position-editor-body {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-        }
-
-        .position-editor-map { flex: 1; height: 100%; }
-
-        .position-editor-sidebar {
-            width: 300px;
-            background: #f9fafb;
-            border-left: 1px solid #e5e7eb;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .position-controls {
-            margin-bottom: 20px;
-            padding: 16px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .tank-position-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .tank-position-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .tank-position-item.active {
-            background: rgba(79, 70, 229, 0.1);
-            border-color: #4f46e5;
-        }
-
-        .position-instructions {
-            margin-top: 20px;
-            padding: 16px;
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #0369a1;
-        }
-
-        .leaflet-marker-draggable { cursor: move !important; }
-        
-        .position-save-confirmation {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            z-index: 100000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        /* ===== DARK THEME STYLES ===== */
-        body.dark-theme { background: #0f172a; color: #e2e8f0; }
-        body.dark-theme .sidebar-minimalist { background: #1e293b; color: #e2e8f0; border-right-color: #334155; }
-        body.dark-theme .sidebar-header { border-bottom-color: #334155; }
-        body.dark-theme .sidebar-title { color: #f1f5f9; }
-        body.dark-theme .sidebar-subtitle { color: #94a3b8; }
-        body.dark-theme .nav-group-title { color: #94a3b8; }
-        body.dark-theme .nav-link { color: #cbd5e1; }
-        body.dark-theme .nav-link:hover { background: #334155; color: #818cf8; }
-        body.dark-theme .nav-link.active { background: rgba(79, 70, 229, 0.2); color: #818cf8; }
-        body.dark-theme .sidebar-legend { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-        body.dark-theme .sidebar-legend h4 { color: #f1f5f9; }
-        body.dark-theme .legend-item { color: #cbd5e1; }
-        body.dark-theme .system-summary-card { background: #1e293b; border-color: #334155; }
-        body.dark-theme .summary-title { color: #f1f5f9; }
-        body.dark-theme .summary-label { color: #94a3b8; }
-        body.dark-theme .summary-value { color: #f1f5f9; }
-        body.dark-theme .main-content { background: #0f172a; }
-        body.dark-theme .top-nav { background: rgba(30, 41, 59, 0.95); border-bottom-color: #334155; }
-        body.dark-theme .nav-toggle { background: #1e293b; border-color: #334155; color: #818cf8; }
-        body.dark-theme .nav-toggle:hover { background: #4f46e5; color: #f1f5f9; }
-        body.dark-theme .page-title { color: #f1f5f9; }
-        body.dark-theme .nav-btn { background: #1e293b; border-color: #334155; color: #cbd5e1; }
-        body.dark-theme .nav-btn:hover { background: #4f46e5; color: #f1f5f9 !important; border-color: #4f46e5; }
-        body.dark-theme .nav-btn.active { background: #4f46e5; color: #f1f5f9; border-color: #4f46e5; }
-        body.dark-theme .location-card { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-        body.dark-theme .location-icon { background: rgba(79, 70, 229, 0.2); color: #818cf8; }
-        body.dark-theme .site-badge { background: #334155; color: #94a3b8; border-color: #475569; }
-        body.dark-theme .stat-card { background: #1e293b; border-color: #334155; color: #e2e8f0; }
-        body.dark-theme .stat-value { color: #f1f5f9; }
-        body.dark-theme .stat-unit { color: #94a3b8; }
-        body.dark-theme .stat-icon { background: #334155; color: #818cf8; }
-        body.dark-theme .stat-content h4 { color: #cbd5e1; }
-        body.dark-theme .stat-content p { color: #94a3b8; }
-        body.dark-theme .stat-trend { color: #94a3b8; }
-        body.dark-theme .status-normal { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        body.dark-theme .status-warning { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-        body.dark-theme .status-danger { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-        body.dark-theme .status-normal .stat-icon { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        body.dark-theme .status-warning .stat-icon { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        body.dark-theme .status-danger .stat-icon { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        body.dark-theme .map-section { background: #1e293b; border-color: #334155; }
-        body.dark-theme .map-section-header { background: #1e293b; border-bottom-color: #334155; }
-        body.dark-theme .map-section-header h3 { color: #f1f5f9; }
-        body.dark-theme .map-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
-        body.dark-theme .map-btn:hover { background: #4f46e5; color: #f1f5f9; border-color: #4f46e5; }
-        body.dark-theme .map-stats-card { background: #1e293b; border-color: #334155; }
-        body.dark-theme .map-stats-header h4 { color: #f1f5f9; }
-        body.dark-theme .map-stat-item { background: #0f172a; border-color: #334155; }
-        body.dark-theme .map-stat-label { color: #94a3b8; }
-        body.dark-theme .map-stat-value { color: #f1f5f9; }
-        body.dark-theme .map-stat-unit { color: #94a3b8; }
-        body.dark-theme .map-stat-trend { color: #94a3b8; }
-        body.dark-theme .modal { background: #1e293b; color: #e2e8f0; }
-        body.dark-theme .modal-header { background: #1e293b; border-bottom-color: #334155; }
-        body.dark-theme .modal-header h3 { color: #f1f5f9; }
-        body.dark-theme .modal-close { color: #94a3b8; }
-        body.dark-theme .modal-close:hover { background: #334155; color: #f1f5f9; }
-        body.dark-theme .detail-header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom-color: #334155; }
-        body.dark-theme .tank-identifier h2 { color: #f1f5f9; }
-        body.dark-theme .tank-temp-large span { color: #f1f5f9; }
-        body.dark-theme .tank-temp-large .unit { color: #94a3b8; }
-        body.dark-theme .detail-grid-item { background: #1e293b; border-color: #334155; }
-        body.dark-theme .detail-grid-item i { color: #818cf8; }
-        body.dark-theme .detail-grid-item label { color: #94a3b8; }
-        body.dark-theme .detail-grid-item span { color: #f1f5f9; }
-        body.dark-theme .date-range-section { background: #1e293b; border-bottom-color: #334155; }
-        body.dark-theme .date-range-title { color: #f1f5f9; }
-        body.dark-theme .date-label { color: #94a3b8; }
-        body.dark-theme .date-input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
-        body.dark-theme .date-input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); }
-        body.dark-theme .date-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
-        body.dark-theme .date-btn:hover { background: #4f46e5; color: #f1f5f9; border-color: #4f46e5; }
-        body.dark-theme .date-btn.active { background: #4f46e5; color: #f1f5f9; border-color: #4f46e5; }
-        body.dark-theme .quick-select-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
-        body.dark-theme .quick-select-btn:hover { background: #334155; border-color: #475569; }
-        body.dark-theme .quick-select-btn.active { background: #4f46e5; color: #f1f5f9; border-color: #4f46e5; }
-        body.dark-theme .selected-date-display { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; color: #38bdf8; }
-        body.dark-theme .selected-date-display i { color: #38bdf8; }
-        body.dark-theme .selected-date-text { color: #38bdf8; }
-        body.dark-theme .selected-date-text strong { color: #f1f5f9; }
-        body.dark-theme .chart-controls { background: #1e293b; border-bottom-color: #334155; }
-        body.dark-theme .chart-control-group label { color: #94a3b8; }
-        body.dark-theme .chart-control-select { background: #0f172a; border-color: #334155; color: #f1f5f9; }
-        body.dark-theme .chart-control-select:focus { border-color: #4f46e5; }
-        body.dark-theme .data-info { background: #1e293b; border-bottom-color: #334155; color: #94a3b8; }
-        body.dark-theme .temperature-values { background: #1e293b; border-color: #334155; }
-        body.dark-theme .temperature-value-label { color: #94a3b8; }
-        body.dark-theme .temperature-value { color: #f1f5f9; }
-        body.dark-theme .modal-actions { background: #1e293b; border-top-color: #334155; }
-        body.dark-theme .modal-btn.secondary { background: #0f172a; color: #cbd5e1; border-color: #334155; }
-        body.dark-theme .modal-btn.secondary:hover { background: #334155; border-color: #475569; }
-        body.dark-theme .chart-loading { color: #64748b; }
-        body.dark-theme .leaflet-tile { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
-        body.dark-theme .leaflet-control { filter: invert(1) hue-rotate(180deg); }
-        body.dark-theme #map { border-color: #334155; }
-        body.dark-theme #connection-status { color: #94a3b8; }
-        body.dark-theme .alert-banner { background: linear-gradient(135deg, #059669, #047857); color: #f0fdfa; }
-        body.dark-theme .alert-close { background: rgba(255, 255, 255, 0.1); color: #f0fdfa; }
-        body.dark-theme .alert-close:hover { background: rgba(255, 255, 255, 0.2); }
-        body.dark-theme .position-editor-content { background: #1e293b; color: #e2e8f0; }
-        body.dark-theme .position-editor-sidebar { background: #1e293b; border-left-color: #334155; }
-        body.dark-theme .position-controls { background: #0f172a; border-color: #334155; }
-        body.dark-theme .tank-position-item { background: #0f172a; border-color: #334155; color: #cbd5e1; }
-        body.dark-theme .tank-position-item:hover { background: #1e293b; border-color: #4f46e5; }
-        body.dark-theme .tank-position-item.active { background: rgba(79, 70, 229, 0.2); border-color: #4f46e5; }
-        body.dark-theme .position-instructions { background: rgba(14, 165, 233, 0.1); border-color: #0ea5e9; color: #38bdf8; }
 
         /* ===== MOBILE RESPONSIVE STYLES ===== */
         @media (max-width: 1024px) {
@@ -1428,27 +996,12 @@
             .chart-control-select {
                 flex: 1;
             }
-
-            /* Position Editor Mobile */
-            .position-editor-content {
-                width: 100%;
-                height: 100%;
-                border-radius: 0;
-            }
             
-            .position-editor-body {
-                flex-direction: column;
-            }
-            
-            .position-editor-map {
-                height: 60%;
-            }
-            
-            .position-editor-sidebar {
-                width: 100%;
-                height: 40%;
-                border-left: none;
-                border-top: 1px solid #e5e7eb;
+            .chatbot-window {
+                width: 300px;
+                height: 400px;
+                bottom: 80px;
+                right: 0;
             }
         }
     </style>
@@ -1585,7 +1138,7 @@
                         <p>All 21 Tanks</p>
                         <div class="stat-trend" id="avg-trend">
                             <i class='bx bx-minus'></i>
-                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1759,57 +1312,23 @@
         </div>
     </div>
 
-    <div class="position-editor" id="position-editor">
-        <div class="position-editor-content">
-            <div class="position-editor-header">
-                <h3><i class='bx bx-map-pin'></i> Tank Position Editor</h3>
-                <div style="display: flex; gap: 10px;">
-                    <button id="save-positions" style="padding: 8px 16px; background: white; color: #4f46e5; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                        Save Positions
-                    </button>
-                    <button id="close-editor" style="padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        <i class='bx bx-x'></i>
-                    </button>
-                </div>
+    <div class="chatbot-container">
+        <div class="chatbot-window" id="chat-window">
+            <div class="chatbot-header">
+                <span>FIMA Assistant</span>
+                <i class='bx bx-minus' style="cursor:pointer" onclick="toggleChat()"></i>
             </div>
-            <div class="position-editor-body">
-                <div id="position-map" class="position-editor-map"></div>
-                <div class="position-editor-sidebar">
-                    <div class="position-controls">
-                        <h4 style="margin: 0 0 12px 0;">Instructions</h4>
-                        <div class="position-instructions">
-                            <p><strong>How to position tanks:</strong></p>
-                            <ul>
-                                <li>Select a tank from the list below</li>
-                                <li>Click on the map where you want to place it</li>
-                                <li>Repeat for all 21 tanks</li>
-                                <li>Drag markers to fine-tune positions</li>
-                                <li>Click "Save Positions" when done</li>
-                            </ul>
-                        </div>
-                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                            <div style="display: flex; gap: 10px;">
-                                <button id="reset-positions" style="flex: 1; padding: 10px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; color: #6b7280; cursor: pointer;">
-                                    Reset All
-                                </button>
-                                <button id="auto-arrange" style="flex: 1; padding: 10px; background: #4f46e5; border: none; border-radius: 6px; color: white; cursor: pointer;">
-                                    Auto Arrange
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin: 0 0 12px 0;">Tank Positions</h4>
-                    <div class="tank-position-list" id="tank-position-list">
-                        </div>
-                </div>
+            <div class="chatbot-messages" id="chat-messages">
+                <div class="message ai-msg">Hello! I am your AI Assistant for FIMA. How can I help you check the tanks today?</div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" id="user-input" placeholder="Ask about tank data...">
+                <button onclick="sendMessage()"><i class='bx bxs-send'></i></button>
             </div>
         </div>
-    </div>
-
-    <div class="position-save-confirmation" id="position-save-confirmation">
-        <i class='bx bx-check-circle'></i>
-        <span>Tank positions saved successfully!</span>
+        <div class="chatbot-btn" onclick="toggleChat()">
+            <i class='bx bxs-bot'></i>
+        </div>
     </div>
 
     <div class="modal-overlay" id="tank-modal" style="display: none;">
@@ -1868,7 +1387,6 @@
                             <i class='bx bx-calendar-alt'></i>
                             Select Date Range
                         </div>
-                        
                         <div class="date-selector-simple">
                             <div class="date-row">
                                 <div class="date-label">Start Date:</div>
@@ -1879,7 +1397,6 @@
                                     </button>
                                 </div>
                             </div>
-                            
                             <div class="date-row">
                                 <div class="date-label">End Date:</div>
                                 <div class="date-input-group">
@@ -1889,25 +1406,13 @@
                                     </button>
                                 </div>
                             </div>
-                            
                             <div class="quick-select-buttons">
-                                <button class="quick-select-btn active" onclick="setDateRange('7days')">
-                                    Last 7 Days
-                                </button>
-                                <button class="quick-select-btn" onclick="setDateRange('30days')">
-                                    Last 30 Days
-                                </button>
-                                <button class="quick-select-btn" onclick="setDateRange('90days')">
-                                    Last 90 Days
-                                </button>
-                                <button class="quick-select-btn" onclick="setDateRange('thisMonth')">
-                                    This Month
-                                </button>
-                                <button class="quick-select-btn" onclick="setDateRange('lastMonth')">
-                                    Last Month
-                                </button>
+                                <button class="quick-select-btn active" onclick="setDateRange('7days')">Last 7 Days</button>
+                                <button class="quick-select-btn" onclick="setDateRange('30days')">Last 30 Days</button>
+                                <button class="quick-select-btn" onclick="setDateRange('90days')">Last 90 Days</button>
+                                <button class="quick-select-btn" onclick="setDateRange('thisMonth')">This Month</button>
+                                <button class="quick-select-btn" onclick="setDateRange('lastMonth')">Last Month</button>
                             </div>
-                            
                             <div class="selected-date-display" id="selected-date-display">
                                 <i class='bx bx-info-circle'></i>
                                 <div class="selected-date-text">
@@ -1935,7 +1440,6 @@
                                 <option value="scatter">Scatter Plot</option>
                             </select>
                         </div>
-                        
                     </div>
                     
                     <div class="data-info">
@@ -1988,8 +1492,90 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Main JavaScript - CONNECTS TO SUPABASE DATABASE WITH VISUAL POSITION EDITOR
         (function() {
+            // =================================================
+            //  AI CHATBOT CONNECTION LOGIC
+            // =================================================
+
+            // This points to your 'functions/chat.js' file automatically
+            const CLOUDFLARE_BACKEND_URL = "/chat"; 
+
+            // 1. Toggle Chat Window
+            window.toggleChat = function() {
+                const win = document.getElementById('chat-window');
+                win.style.display = win.style.display === 'flex' ? 'none' : 'flex';
+            };
+
+            // 2. Send Message to Cloudflare Function
+            window.sendMessage = async function() {
+                const input = document.getElementById('user-input');
+                const container = document.getElementById('chat-messages');
+                const text = input.value.trim();
+                
+                if (!text) return;
+
+                // A. Show User Message on Screen
+                container.innerHTML += `<div class="message user-msg">${text}</div>`;
+                input.value = '';
+                container.scrollTop = container.scrollHeight;
+
+                // B. Show "Thinking" Indicator
+                const typingId = "ai-" + Date.now();
+                container.innerHTML += `<div class="message ai-msg" id="${typingId}">Connecting to AI...</div>`;
+                container.scrollTop = container.scrollHeight;
+
+                // C. Gather Dashboard Data for Context
+                const currentTemp = document.getElementById('avg-temp')?.textContent || "unknown";
+                const hotTanks = document.getElementById('sidebar-hot-tanks')?.textContent || "0";
+                const contextData = `The facility has 21 tanks. Average Temp is ${currentTemp}°C. There are ${hotTanks} hot tanks.`;
+
+                try {
+                    console.log("🚀 Sending request to:", CLOUDFLARE_BACKEND_URL);
+
+                    // D. The Actual Connection Fetch
+                    const response = await fetch(CLOUDFLARE_BACKEND_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            message: text,
+                            contextData: contextData // Sends the dashboard stats to the backend
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // E. Update UI with AI Reply
+                    const aiDiv = document.getElementById(typingId);
+                    if (data.reply) {
+                        aiDiv.innerText = data.reply;
+                    } else if (data.error) {
+                        aiDiv.innerText = "Error: " + data.error;
+                    }
+
+                } catch (err) {
+                    console.error("❌ Connection Failed:", err);
+                    document.getElementById(typingId).innerText = "Error: Could not reach the backend function. Are you running this on Cloudflare?";
+                }
+                
+                container.scrollTop = container.scrollHeight;
+            };
+
+            // Allow "Enter" key to send
+            const inputField = document.getElementById('user-input');
+            if (inputField) {
+                inputField.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendMessage();
+                });
+            }
+
+            // =================================================
+            //  EXISTING DASHBOARD LOGIC (Preserved)
+            // =================================================
+
             // Global variables
             let realtimeEnabled = true;
             let map = null;
@@ -2064,15 +1650,11 @@
                 ];
                 
                 tankPositions = fixedPositions;
-                console.log('✅ Loaded HARDCODED tank positions based on provided coordinates');
             }
 
             // Save tank positions to localStorage (Legacy function kept for structure)
             function saveTankPositions() {
-                // Since we are using hardcoded positions, this function is just a placeholder
-                // or for local testing only.
                 localStorage.setItem('fima_tank_positions', JSON.stringify(tankPositions));
-                console.log('💾 Saved tank positions to localStorage (Note: Hardcoded positions preferred)');
                 
                 // Show confirmation message
                 const confirmation = document.getElementById('position-save-confirmation');
@@ -2093,7 +1675,6 @@
                 }
                 
                 // If not found, create a fallback position
-                console.warn(`Tank ${tankId} not found in positions, using fallback`);
                 return {
                     id: tankId,
                     lat: FIMA_COORDINATES.lat + (Math.random() - 0.5) * 0.002,
@@ -2303,7 +1884,6 @@
                 // Chart controls in modal
                 const chartPeriodSelect = document.getElementById('chart-period');
                 const chartTypeSelect = document.getElementById('chart-type-modal');
-                
                 
                 if (chartPeriodSelect) {
                     chartPeriodSelect.addEventListener('change', function() {
@@ -2941,9 +2521,16 @@
                     currentEndDate = new Date(today);
                 }
                 
+                // When "Today" is selected (same date), handle end of day logic or live updates
+                // If today, push the 'currentEndDate' to tomorrow 00:00:00 to include all of today's data
+                const effectiveEndDate = new Date(currentEndDate);
+                if (isSingleDayRange(currentStartDate, currentEndDate)) {
+                    effectiveEndDate.setHours(23, 59, 59, 999);
+                }
+
                 return data.filter(reading => {
                     const readingDate = new Date(reading.created_at);
-                    return readingDate >= currentStartDate && readingDate <= currentEndDate;
+                    return readingDate >= currentStartDate && readingDate <= effectiveEndDate;
                 });
             }
 
