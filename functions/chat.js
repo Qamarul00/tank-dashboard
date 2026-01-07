@@ -1,8 +1,8 @@
 export async function onRequestPost(context) {
   const API_KEY = context.env.GEMINI_API_KEY;
   
-  // FIX: Changed from 'gemini-2.0-flash' to 'gemini-1.5-flash'
-  const MODEL = "gemini-1.5-flash"; 
+  // FIX: Use the generic 'latest' alias which is present in your list
+  const MODEL = "gemini-flash-latest"; 
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
   try {
@@ -27,6 +27,11 @@ export async function onRequestPost(context) {
     // Check for errors from Google
     if (data.error) {
         return new Response(JSON.stringify({ error: "AI Error: " + data.error.message }), { status: 200 });
+    }
+
+    // Safety check: ensure candidates exist
+    if (!data.candidates || data.candidates.length === 0) {
+        return new Response(JSON.stringify({ error: "AI returned no content. It might have been blocked for safety." }), { status: 200 });
     }
 
     const aiText = data.candidates[0].content.parts[0].text;
