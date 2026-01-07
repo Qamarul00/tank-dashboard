@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare Function Connection Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #4f46e5; color: white; border: none; border-radius: 8px; }
+        button:hover { background: #4338ca; }
+        #status { margin-top: 20px; font-weight: bold; font-size: 18px; }
+        #response { margin-top: 20px; padding: 20px; background: #f3f4f6; border-radius: 8px; display: none; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <h1>Backend Connection Check</h1>
+    <p>Click below to send a test message to <code>/functions/chat.js</code></p>
+    
+    <button onclick="runTest()">Test Connection</button>
+
+    <div id="status"></div>
+    <pre id="response"></pre>
+
+    <script>
+        async function runTest() {
+            const statusDiv = document.getElementById('status');
+            const responseDiv = document.getElementById('response');
+            
+            // 1. Reset UI
+            statusDiv.innerHTML = "⏳ Sending signal to backend...";
+            statusDiv.style.color = "orange";
+            responseDiv.style.display = "none";
+
+            try {
+                // 2. The critical part: Fetching the route defined by your folder structure
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: "System Connectivity Test", 
+                        contextData: "No context needed." 
+                    })
+                });
+
+                // 3. Handle Errors (404 means the file isn't found/deployed)
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+                }
+
+                // 4. Parse Response
+                const data = await response.json();
+
+                // 5. Success
+                statusDiv.innerHTML = "✅ CONNECTION SUCCESSFUL!";
+                statusDiv.style.color = "green";
+                responseDiv.style.display = "block";
+                responseDiv.innerText = "Raw Response from Backend:\n" + JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                // 6. Failure
+                statusDiv.innerHTML = "❌ CONNECTION FAILED";
+                statusDiv.style.color = "red";
+                responseDiv.style.display = "block";
+                responseDiv.innerText = "Troubleshooting Info:\n" + error.message + 
+                    "\n\nPossible Causes:\n1. 'functions' folder not deployed.\n2. API Key missing in Cloudflare settings.\n3. Opening file locally (file://) instead of on server.";
+            }
+        }
+    </script>
+</body>
+</html>
