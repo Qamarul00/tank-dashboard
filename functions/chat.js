@@ -1,6 +1,8 @@
 export async function onRequestPost(context) {
+  // FIXED: Ensure we default to a safe model version
   const API_KEY = context.env.GEMINI_API_KEY;
-  const MODEL = "gemini-flash-latest"; 
+  // "gemini-1.5-flash" is the stable, correct model ID. "flash-latest" often fails via REST API.
+  const MODEL = "gemini-1.5-flash"; 
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
   try {
@@ -12,7 +14,6 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         // SYSTEM INSTRUCTIONS: The AI's core rules
         system_instruction: {
-          role: "system",
           parts: [{
             text: `You are the FIMA Bulking Services AI Dashboard Assistant. 
             
@@ -47,7 +48,14 @@ export async function onRequestPost(context) {
 
     const data = await response.json();
 
-    // Fail-safe logic for the backend
+    // Fail-safe logic: Check if Google returned an error structure
+    if (data.error) {
+        console.error("Gemini API Error:", data.error);
+        return new Response(JSON.stringify({ 
+            reply: "I am currently unable to process data due to a service limit. Please try again in a moment." 
+        }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
         const aiText = data.candidates[0].content.parts[0].text;
         return new Response(JSON.stringify({ reply: aiText }), {
