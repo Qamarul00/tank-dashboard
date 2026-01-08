@@ -1,63 +1,64 @@
 export async function onRequestPost(context) {
-  // FIXED: Ensure we default to a safe model version
-  const API_KEY = context.env.GEMINI_API_KEY;
-  // "gemini-1.5-flash" is the stable, correct model ID. "flash-latest" often fails via REST API.
-  const MODEL = "gemini-1.5-flash"; 
-  const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+  // 1. GET API KEY
+  // Make sure you add OPENAI_API_KEY to your Cloudflare Dashboard -> Settings -> Variables
+  const API_KEY = context.env.OPENAI_API_KEY; 
+  
+  // 2. CONFIGURATION
+  const ENDPOINT = "https://api.openai.com/v1/chat/completions";
+  const MODEL = "gpt-4o-mini"; // "gpt-4o" is smarter but more expensive. "gpt-4o-mini" is fast & cheap.
 
   try {
     const { message, contextData } = await context.request.json();
 
-    const response = await fetch(URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // SYSTEM INSTRUCTIONS: The AI's core rules
-        system_instruction: {
-          parts: [{
-            text: `You are the FIMA Bulking Services AI Dashboard Assistant. 
+    // 3. SYSTEM PROMPT (The "Persona")
+    const systemPrompt = `You are the FIMA Bulking Services AI Dashboard Assistant. 
             
-            IDENTITY:
-            - You are a highly professional, executive industrial assistant.
-            - You provide data-driven insights for chemical terminal operations.
+    IDENTITY:
+    - You are a highly professional, executive industrial assistant.
+    - You provide data-driven insights for chemical terminal operations.
 
-            FORMATTING RULES (STRICT):
-            - Respond in PLAIN TEXT ONLY.
-            - NEVER use Markdown formatting. Do NOT use asterisks (**), underscores (_), or hashtags (#).
-            - Write temperatures as [Value]°C (e.g., 25.0°C).
+    FORMATTING RULES (STRICT):
+    - Respond in PLAIN TEXT ONLY.
+    - NEVER use Markdown formatting. Do NOT use asterisks (**), underscores (_), or hashtags (#).
+    - Write temperatures as [Value]°C (e.g., 25.0°C).
 
-            BEHAVIOR:
-            - If the user says "Hi" or "Hello", respond with a professional 1-sentence greeting and ask how you can help.
-            - Do not repeat the background context data back to the user unless they ask for a summary or report.
-            - Answer random general questions intelligently while staying in your FIMA persona.`
-          }]
-        },
-        contents: [{
-          role: "user",
-          parts: [{
-            text: `[HIDDEN CONTEXT]: ${contextData}\n\n[USER INQUIRY]: ${message}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.1, // Keeps it factual and professional
-          maxOutputTokens: 500,
-          topP: 0.8
-        }
+    BEHAVIOR:
+    - If the user says "Hi" or "Hello", respond with a professional 1-sentence greeting and ask how you can help.
+    - Do not repeat the background context data back to the user unless they ask for a summary or report.
+    - Answer random general questions intelligently while staying in your FIMA persona.`;
+
+    // 4. CALL OPENAI API
+    const response = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `[HIDDEN CONTEXT]: ${contextData}\n\n[USER INQUIRY]: ${message}` }
+        ],
+        temperature: 0.1, // Low temperature = more factual/professional
+        max_tokens: 500,
+        top_p: 0.8
       })
     });
 
     const data = await response.json();
 
-    // Fail-safe logic: Check if Google returned an error structure
+    // 5. ERROR HANDLING
     if (data.error) {
-        console.error("Gemini API Error:", data.error);
+        console.error("OpenAI API Error:", data.error);
         return new Response(JSON.stringify({ 
-            reply: "I am currently unable to process data due to a service limit. Please try again in a moment." 
+            reply: `System Notification: Unable to process request. (${data.error.message})` 
         }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        const aiText = data.candidates[0].content.parts[0].text;
+    // 6. SUCCESS RESPONSE
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+        const aiText = data.choices[0].message.content;
         return new Response(JSON.stringify({ reply: aiText }), {
             headers: { 'Content-Type': 'application/json' }
         });
