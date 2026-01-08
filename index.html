@@ -2398,8 +2398,12 @@
 
                 function updateMessage(id, text) {
                     const msg = document.getElementById(`msg-${id}`);
-                    if (msg) msg.innerText = text;
-                    messages.scrollTop = messages.scrollHeight;
+                    if (msg) {
+                        // Clean any unexpected characters
+                        msg.innerText = text; 
+                    }
+                    const messagesContainer = document.getElementById('chat-messages');
+                    essagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
             }
 
