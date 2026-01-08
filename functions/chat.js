@@ -1,63 +1,68 @@
 export async function onRequestPost(context) {
-  // 1. GET API KEY
-  // Ensure this matches the variable name in Cloudflare Settings
-  const API_KEY = context.env.OPENAI_API_KEY; 
-  
-  const ENDPOINT = "https://api.openai.com/v1/chat/completions";
-  const MODEL = "gpt-4o-mini"; 
+  const API_KEY = context.env.GEMINI_API_KEY;
+  const MODEL = "gemini-flash-latest"; 
+  const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
-  try {
-    const { message, contextData } = await context.request.json();
+  try {
+    const { message, contextData } = await context.request.json();
 
-    const systemPrompt = `You are the FIMA Bulking Services AI Dashboard Assistant. 
-    IDENTITY: Professional industrial assistant.
-    FORMATTING: Plain text only. No Markdown.
-    CONTEXT: ${contextData}`;
+    const response = await fetch(URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // SYSTEM INSTRUCTIONS: The AI's core rules
+        system_instruction: {
+          role: "system",
+          parts: [{
+            text: `You are the FIMA Bulking Services AI Dashboard Assistant. 
+            
+            IDENTITY:
+            - You are a highly professional, executive industrial assistant.
+            - You provide data-driven insights for chemical terminal operations.
 
-    const response = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message }
-        ],
-        temperature: 0.1,
-        max_tokens: 500
-      })
-    });
+            FORMATTING RULES (STRICT):
+            - Respond in PLAIN TEXT ONLY.
+            - NEVER use Markdown formatting. Do NOT use asterisks (**), underscores (_), or hashtags (#).
+            - Write temperatures as [Value]°C (e.g., 25.0°C).
 
-    const data = await response.json();
+            BEHAVIOR:
+            - If the user says "Hi" or "Hello", respond with a professional 1-sentence greeting and ask how you can help.
+            - Do not repeat the background context data back to the user unless they ask for a summary or report.
+            - Answer random general questions intelligently while staying in your FIMA persona.`
+          }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{
+            text: `[HIDDEN CONTEXT]: ${contextData}\n\n[USER INQUIRY]: ${message}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1, // Keeps it factual and professional
+          maxOutputTokens: 500,
+          topP: 0.8
+        }
+      })
+    });
 
-    // --- DEBUGGING LOGIC START ---
-    
-    // Check for explicit API errors
-    if (data.error) {
-        return new Response(JSON.stringify({ 
-            reply: `⚠️ OpenAI Error: ${data.error.message} (Type: ${data.error.type})` 
-        }), { headers: { 'Content-Type': 'application/json' } });
-    }
+    const data = await response.json();
 
-    // Check for successful response
-    if (data.choices && data.choices[0] && data.choices[0].message) {
-        return new Response(JSON.stringify({ 
-            reply: data.choices[0].message.content 
-        }), { headers: { 'Content-Type': 'application/json' } });
-    } else {
-        // IF WE GET HERE, OPENAI SENT SOMETHING WEIRD. PRINT IT.
-        return new Response(JSON.stringify({ 
-            reply: `⚠️ Unexpected Response Structure: ${JSON.stringify(data)}` 
-        }), { headers: { 'Content-Type': 'application/json' } });
-    }
-    // --- DEBUGGING LOGIC END ---
+    // Fail-safe logic for the backend
+    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+        const aiText = data.candidates[0].content.parts[0].text;
+        return new Response(JSON.stringify({ reply: aiText }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } else {
+        return new Response(JSON.stringify({ 
+            reply: "The operational assistant is currently unavailable. Please verify your query and try again." 
+        }), { headers: { 'Content-Type': 'application/json' } });
+    }
 
-  } catch (error) {
-    return new Response(JSON.stringify({ 
-        reply: `⚠️ System Error: ${error.message}` 
-    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-  }
+  } catch (error) {
+    return new Response(JSON.stringify({ 
+        error: "System Error: Connection to AI services interrupted." 
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  }
 }
+
