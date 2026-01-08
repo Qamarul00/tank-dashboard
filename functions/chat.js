@@ -44,4 +44,3 @@ export async function onRequestPost(context) {
   }
 }
 
-this is my chat.js code for AI chatbot for index.html, please hold and dont do anything
