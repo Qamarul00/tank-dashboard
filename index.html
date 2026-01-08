@@ -2349,41 +2349,37 @@
                 toggle.onclick = () => win.style.display = 'flex';
                 close.onclick = () => win.style.display = 'none';
 
-                // FIND THIS SECTION IN YOUR index.html
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-    
-                // 1. Capture ONLY what the user typed
-                const userMessage = input.value.trim();
-                if (!userMessage) return;
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const text = input.value.trim();
+                    if (!text) return;
 
-                // 2. Display ONLY that short message in the blue bubble
-                appendMessage('user', userMessage);
-                input.value = '';
+                    // Append user message
+                    appendMessage('user', text);
+                    input.value = '';
 
-                const typingId = appendMessage('bot', 'AI is thinking...');
+                    // Show typing
+                    const typingId = appendMessage('bot', 'AI is thinking...');
 
-                try {
-                    // 3. Prepare the dashboard data SILENTLY (not shown on screen)
-                    const avgTemp = document.getElementById('avg-temp').innerText;
-                    const tankSummary = currentData.map(t => `T${t.tank_id}: ${t.temperature.toFixed(1)}C`).join(', ');
-        
-                    // 4. Send the short message AND the hidden data to the backend
-                    const response = await fetch('/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            message: userMessage, // Just "hi"
-                            contextData: `Avg Temp: ${avgTemp}. Tank Details: ${tankSummary}` // Hidden background data
-                        })
-                    });
+                    try {
+                        // Prepare dashboard context
+                        const dashboardState = currentData.map(t => `Tank ${t.tank_id}: ${t.temperature.toFixed(1)}°C`).join(', ');
+                        
+                        const response = await fetch('/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                message: text,
+                                contextData: `The facility average is ${document.getElementById('avg-temp').innerText}°C. Status: ${dashboardState}`
+                            })
+                        });
 
-                    const data = await response.json();
-                    updateMessage(typingId, data.reply || data.error);
-                } catch (err) {
-                    updateMessage(typingId, "Error: Could not reach the AI server.");
-                }
-            };
+                        const data = await response.json();
+                        updateMessage(typingId, data.reply || data.error);
+                    } catch (err) {
+                        updateMessage(typingId, "Error connecting to AI. Please try again.");
+                    }
+                };
 
                 function appendMessage(type, text) {
                     const id = Date.now();
@@ -2398,12 +2394,8 @@
 
                 function updateMessage(id, text) {
                     const msg = document.getElementById(`msg-${id}`);
-                    if (msg) {
-                        // Clean any unexpected characters
-                        msg.innerText = text; 
-                    }
-                    const messagesContainer = document.getElementById('chat-messages');
-                    essagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    if (msg) msg.innerText = text;
+                    messages.scrollTop = messages.scrollHeight;
                 }
             }
 
