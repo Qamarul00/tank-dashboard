@@ -2351,33 +2351,34 @@
 
                 form.onsubmit = async (e) => {
                     e.preventDefault();
-                    const text = input.value.trim();
-                    if (!text) return;
+                    const userTypedText = input.value.trim(); // Capture ONLY what you typed
+                    if (!userTypedText) return;
 
-                    // Append user message
-                    appendMessage('user', text);
+                    // 1. Show ONLY the "Hi" (or whatever you typed) in your bubble
+                    appendMessage('user', userTypedText);
                     input.value = '';
 
-                    // Show typing
                     const typingId = appendMessage('bot', 'AI is thinking...');
 
                     try {
-                        // Prepare dashboard context
+                        // 2. Gather the data context SILENTLY to send to backend
+                        const avgTemp = document.getElementById('avg-temp').innerText;
                         const dashboardState = currentData.map(t => `Tank ${t.tank_id}: ${t.temperature.toFixed(1)}°C`).join(', ');
-                        
+                        const hiddenContext = `Average: ${avgTemp}°C. Details: ${dashboardState}`;
+
                         const response = await fetch('/chat', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
-                                message: text,
-                                contextData: `The facility average is ${document.getElementById('avg-temp').innerText}°C. Status: ${dashboardState}`
+                                message: userTypedText, // Send only your question
+                                contextData: hiddenContext // Send data as separate field
                             })
                         });
 
                         const data = await response.json();
                         updateMessage(typingId, data.reply || data.error);
                     } catch (err) {
-                        updateMessage(typingId, "Error connecting to AI. Please try again.");
+                        updateMessage(typingId, "System connection error. Please try again.");
                     }
                 };
 
