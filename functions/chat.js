@@ -14,19 +14,21 @@ export async function onRequestPost(context) {
           parts: [{
             text: `You are the FIMA Bulking Services AI. 
             TONE: Professional and executive. 
-            RULES: 1. Plain text only (No ** or _). 2. Answer the user's specific question. 
-            3. If the user says "Hi", provide a brief 1-sentence greeting and ask how you can help. 
-            4. Use the provided context data only if relevant.`
+            STRICT RULES: 
+            1. Response in PLAIN TEXT only. 
+            2. Do NOT repeat the background context data back to the user unless they ask for a report. 
+            3. If the user says "hi", just reply with a professional greeting. 
+            4. Keep answers concise.`
           }]
         },
         contents: [{
           role: "user",
           parts: [{
-            text: `CONTEXT DATA (HIDDEN FROM USER): ${contextData}\n\nHUMAN QUESTION: ${message}`
+            text: `[BACKGROUND DATA: ${contextData}]\n\nUSER QUESTION: ${message}`
           }]
         }],
         generationConfig: {
-          temperature: 0.1, // Keeps it very focused and professional
+          temperature: 0.1,
           maxOutputTokens: 400
         }
       })
@@ -40,6 +42,6 @@ export async function onRequestPost(context) {
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: "Error: " + error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
