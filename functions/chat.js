@@ -14,34 +14,42 @@ export async function onRequestPost(context) {
           parts: [{
             text: `You are the FIMA Bulking Services AI. 
             TONE: Professional and executive. 
-            STRICT RULES: 
-            1. Response in PLAIN TEXT only. 
-            2. Do NOT repeat the background context data back to the user unless they ask for a report. 
-            3. If the user says "hi", just reply with a professional greeting. 
-            4. Keep answers concise.`
+            RULES: 
+            1. Plain text only (Strictly NO Markdown bolding like **). 
+            2. Answer the user's specific question using the provided data. 
+            3. If the user says "Hi", provide a brief 1-sentence greeting.
+            4. Keep answers accurate and data-driven.`
           }]
         },
         contents: [{
           role: "user",
           parts: [{
-            text: `[BACKGROUND DATA: ${contextData}]\n\nUSER QUESTION: ${message}`
+            text: `[DASHBOARD DATA]: ${contextData}\n\n[USER QUESTION]: ${message}`
           }]
         }],
         generationConfig: {
           temperature: 0.1,
-          maxOutputTokens: 400
+          maxOutputTokens: 500
         }
       })
     });
 
     const data = await response.json();
-    const aiText = data.candidates[0].content.parts[0].text;
-    
-    return new Response(JSON.stringify({ reply: aiText }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+
+    // STABLE CHECK: Ensure the path exists before reading [0]
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+        const aiText = data.candidates[0].content.parts[0].text;
+        return new Response(JSON.stringify({ reply: aiText }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } else {
+        throw new Error(data.error ? data.error.message : "Malformed AI response");
+    }
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Service temporarily unavailable. Please try again." }), { 
+        status: 200, // Return 200 so the frontend can display the error message nicely
+        headers: { 'Content-Type': 'application/json' } 
+    });
   }
 }
