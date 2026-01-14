@@ -1,5 +1,5 @@
 export async function onRequestPost(context) {
-  const API_KEY = context.env.GEMINI_API_KEY;
+  const API_KEY = context.env._API_KEY;
   const MODEL = "gemini-flash-latest"; 
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
@@ -65,4 +65,5 @@ export async function onRequestPost(context) {
     }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
+
 
