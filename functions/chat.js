@@ -1,75 +1,45 @@
 export async function onRequestPost(context) {
-  const API_KEY = context.env.GEMINI_API_KEY;
-  const MODEL = "gemini-2.5"; // Updated model version
-  const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+  const API_KEY = context.env.GEMINI_API_KEY;
+  
+  // FIX: Use the generic 'latest' alias which is present in your list
+  const MODEL = "gemini-flash-latest"; 
+  const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
-  try {
-    const { message, contextData } = await context.request.json();
+  try {
+    const { message, contextData } = await context.request.json();
 
-    const response = await fetch(URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          role: "system",
-          parts: [{
-            text: `You are the FIMA Bulking Services AI Dashboard Assistant. 
-            
-            IDENTITY:
-            - You are a highly professional, executive industrial assistant.
-            - You provide data-driven insights for chemical terminal operations.
+    const response = await fetch(URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are an AI assistant for FIMA Bulking Services. 
+                  Current Dashboard Data: ${contextData}
+                  User asks: ${message}`
+          }]
+        }]
+      })
+    });
 
-            FORMATTING RULES (STRICT):
-            - Respond in PLAIN TEXT ONLY.
-            - NEVER use Markdown formatting. Do NOT use asterisks (**), underscores (_), or hashtags (#).
-            - Write temperatures as [Value]°C (e.g., 25.0°C).
+    const data = await response.json();
 
-            BEHAVIOR:
-            - If the user says "Hi" or "Hello", respond with a professional 1-sentence greeting and ask how you can help.
-            - Do not repeat the background context data back to the user unless they ask for a summary or report.
-            - Answer random general questions intelligently while staying in your FIMA persona.`
-          }]
-        },
-        contents: [{
-          role: "user",
-          parts: [{
-            text: `[HIDDEN CONTEXT]: ${contextData}\n\n[USER INQUIRY]: ${message}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 500,
-          topP: 0.8
-        }
-      })
-    });
+    // Check for errors from Google
+    if (data.error) {
+        return new Response(JSON.stringify({ error: "AI Error: " + data.error.message }), { status: 200 });
+    }
 
-    const data = await response.json();
+    // Safety check: ensure candidates exist
+    if (!data.candidates || data.candidates.length === 0) {
+        return new Response(JSON.stringify({ error: "AI returned no content. It might have been blocked for safety." }), { status: 200 });
+    }
 
-    console.log("Raw Response Data:", data);  // Debugging step: log the raw response
+    const aiText = data.candidates[0].content.parts[0].text;
+    return new Response(JSON.stringify({ reply: aiText }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-    // Check for API errors
-    if (data.error) {
-      return new Response(JSON.stringify({ 
-        reply: "API Error: " + data.error.message 
-      }), { headers: { 'Content-Type': 'application/json' } });
-    }
-
-    // Check for valid response
-    if (data.choices && data.choices[0]?.text) {
-      const aiText = data.choices[0].text;
-      return new Response(JSON.stringify({ reply: aiText }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    } else {
-      return new Response(JSON.stringify({ 
-        reply: "The operational assistant is currently unavailable. Please verify your query and try again." 
-      }), { headers: { 'Content-Type': 'application/json' } });
-    }
-
-  } catch (error) {
-    return new Response(JSON.stringify({ 
-      error: "System Error: Connection to AI services interrupted." 
-    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-  }
+  } catch (error) {
+    return new Response(JSON.stringify({ error: "System Error: " + error.message }), { status: 500 });
+  }
 }
