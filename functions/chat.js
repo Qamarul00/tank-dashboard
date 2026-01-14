@@ -1,6 +1,6 @@
 export async function onRequestPost(context) {
   const API_KEY = context.env.GEMINI_API_KEY;
-  const MODEL = "gemini-2.5";  // Updated model version
+  const MODEL = "gemini-2.5"; // Updated model version
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
   try {
@@ -10,12 +10,11 @@ export async function onRequestPost(context) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        // SYSTEM INSTRUCTIONS: The AI's core rules
         system_instruction: {
           role: "system",
           parts: [{
             text: `You are the FIMA Bulking Services AI Dashboard Assistant. 
-
+            
             IDENTITY:
             - You are a highly professional, executive industrial assistant.
             - You provide data-driven insights for chemical terminal operations.
@@ -38,7 +37,7 @@ export async function onRequestPost(context) {
           }]
         }],
         generationConfig: {
-          temperature: 0.1, // Keeps it factual and professional
+          temperature: 0.1,
           maxOutputTokens: 500,
           topP: 0.8
         }
@@ -47,9 +46,18 @@ export async function onRequestPost(context) {
 
     const data = await response.json();
 
-    // Fail-safe logic for the backend
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-      const aiText = data.candidates[0].content.parts[0].text;
+    console.log("Raw Response Data:", data);  // Debugging step: log the raw response
+
+    // Check for API errors
+    if (data.error) {
+      return new Response(JSON.stringify({ 
+        reply: "API Error: " + data.error.message 
+      }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    // Check for valid response
+    if (data.choices && data.choices[0]?.text) {
+      const aiText = data.choices[0].text;
       return new Response(JSON.stringify({ reply: aiText }), {
         headers: { 'Content-Type': 'application/json' }
       });
