@@ -1,6 +1,6 @@
 export async function onRequestPost(context) {
   const API_KEY = context.env.GEMINI_API_KEY;
-  const MODEL = "gemini-2.5-flash";  
+  const MODEL = "gemini-2.5-flash"; 
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
   try {
@@ -12,9 +12,13 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `You are an AI assistant for FIMA Bulking Services. 
+            text: `You are an AI assistant for FIMA Bulking Services.
                     Current Dashboard Data: ${contextData}
-                    User asks: ${message}`
+                    User asks: ${message}
+                    Your response should be concise and professional. Avoid unnecessary details.
+                    When asked for a summary, provide a clear and concise summary in one paragraph, avoiding bullet points or markdown.
+                    You must respond with plain text. Do not use any markdown formatting like asterisks (*), underscores (_), or hashtags (#).
+                    Provide answers clearly and professionally, keeping it factual and to the point.`
           }]
         }]
       })
