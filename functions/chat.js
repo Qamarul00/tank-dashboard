@@ -1,9 +1,8 @@
 export async function onRequestPost(context) {
   const API_KEY = context.env.GEMINI_API_KEY;
   
-  // Use the specific 'gemini-2.5' model (if available)
-  const MODEL = "gemini-2.5";  // Update to 'gemini-2.5' if it supports the 'generateContent' method.
-  
+  // Use the correct model: "gemini-2.5-flash" or "gemini-2.5-flash-lite"
+  const MODEL = "gemini-2.5-flash";  // Change this if you want to use Flash-Lite
   const URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
   try {
@@ -25,17 +24,16 @@ export async function onRequestPost(context) {
 
     const data = await response.json();
 
-    // Check for errors from Gemini API
+    // Check for errors from Google
     if (data.error) {
-      return new Response(JSON.stringify({ error: "AI Error: " + data.error.message }), { status: 200 });
+        return new Response(JSON.stringify({ error: "AI Error: " + data.error.message }), { status: 200 });
     }
 
-    // Safety check: ensure candidates exist in the response
+    // Safety check: ensure candidates exist
     if (!data.candidates || data.candidates.length === 0) {
-      return new Response(JSON.stringify({ error: "AI returned no content. It might have been blocked for safety." }), { status: 200 });
+        return new Response(JSON.stringify({ error: "AI returned no content. It might have been blocked for safety." }), { status: 200 });
     }
 
-    // Extract AI response text
     const aiText = data.candidates[0].content.parts[0].text;
     return new Response(JSON.stringify({ reply: aiText }), {
       headers: { 'Content-Type': 'application/json' }
